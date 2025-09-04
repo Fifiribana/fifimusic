@@ -834,6 +834,55 @@ async def startup_event():
                 await db.tracks.insert_one(prepare_for_mongo(track.dict()))
         
         logger.info("Additional sample data initialized successfully!")
+        
+        # Add featured collections
+        collection_count = await db.collections.count_documents({})
+        if collection_count < 5:
+            logger.info("Adding featured collections...")
+            
+            sample_collections = [
+                CollectionCreate(
+                    title="Rythmes d'Afrique",
+                    description="Une exploration des rythmes africains traditionnels et modernes, du Bikutsi au Soukous",
+                    tracks=[],  # Will be populated with actual track IDs
+                    image_url="https://images.unsplash.com/photo-1565719178004-420e3480e2b5?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzh8MHwxfHNlYXJjaHwxfHx3b3JsZCUyMG11c2ljJTIwaW5zdHJ1bWVudHN8ZW58MHx8fHwxNzU3MDI2ODgyfDA&ixlib=rb-4.1.0&q=85",
+                    featured=True
+                ),
+                CollectionCreate(
+                    title="Sonorités Asiatiques",
+                    description="Du sitar indien au shamisen japonais, découvrez la richesse musicale de l'Asie",
+                    tracks=[],
+                    image_url="https://images.unsplash.com/photo-1651931802891-1e200feafefe?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzh8MHwxfHNlYXJjaHwyfHx3b3JsZCUyMG11c2ljJTIwaW5zdHJ1bWVudHN8ZW58MHx8fHwxNzU3MDI2ODgyfDA&ixlib=rb-4.1.0&q=85",
+                    featured=True
+                ),
+                CollectionCreate(
+                    title="Simon Messela Universe",
+                    description="L'univers musical complet du fondateur d'US EXPLO, de l'Afrique au monde entier",
+                    tracks=[],
+                    image_url="https://images.pexels.com/photos/29333488/pexels-photo-29333488.jpeg",
+                    featured=True
+                ),
+                CollectionCreate(
+                    title="Fusion Mondiale",
+                    description="Quand les traditions se rencontrent avec la modernité : fusion électronique mondiale",
+                    tracks=[],
+                    image_url="https://images.unsplash.com/photo-1556484687-30636164638b?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Nzd8MHwxfHNlYXJjaHwxfHxjdWx0dXJhbCUyMGRpdmVyc2l0eXxlbnwwfHx8fDE3NTcwMjY4ODl8MA&ixlib=rb-4.1.0&q=85",
+                    featured=True
+                ),
+                CollectionCreate(
+                    title="Découvertes du Mois",
+                    description="Notre sélection mensuelle des nouveautés musicales du monde entier",
+                    tracks=[],
+                    image_url="https://images.unsplash.com/photo-1516146544193-b54a65682f16?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Nzd8MHwxfHNlYXJjaHwyfHxjdWx0dXJhbCUyMGRpdmVyc2l0eXxlbnwwfHx8fDE3NTcwMjY4ODl8MA&ixlib=rb-4.1.0&q=85",
+                    featured=True
+                )
+            ]
+            
+            for collection_data in sample_collections:
+                existing = await db.collections.find_one({"title": collection_data.title})
+                if not existing:
+                    collection = Collection(**collection_data.dict())
+                    await db.collections.insert_one(prepare_for_mongo(collection.dict()))
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

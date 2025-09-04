@@ -174,28 +174,81 @@ class USExploAPITester:
         
         return all(results)
 
-    def test_create_track(self):
-        """Test creating a new track"""
+    def test_create_track_with_preview(self):
+        """Test creating a new track with preview URL"""
         track_data = {
-            "title": "Test Track",
-            "artist": "Test Artist",
-            "region": "Test Region",
-            "style": "Test Style",
-            "instrument": "Test Instrument",
+            "title": "Test Bikutsi Track",
+            "artist": "Test Artist Phase 2",
+            "region": "Afrique",
+            "style": "Bikutsi",
+            "instrument": "Balafon",
             "duration": 180,
-            "bpm": 120,
-            "mood": "Test Mood",
-            "audio_url": "https://example.com/test.mp3",
-            "artwork_url": "https://example.com/test.jpg",
-            "price": 2.99,
-            "description": "A test track for API testing"
+            "bpm": 140,
+            "mood": "Énergique",
+            "audio_url": "https://example.com/test-bikutsi.mp3",
+            "preview_url": "https://example.com/previews/test-bikutsi-preview.mp3",
+            "artwork_url": "https://example.com/test-bikutsi.jpg",
+            "price": 3.29,
+            "description": "A test Bikutsi track for Phase 2 testing",
+            "is_featured": True
         }
         
-        success, response = self.run_test("Create Track", "POST", "tracks", 200, data=track_data)
+        success, response = self.run_test("Create Track with Preview", "POST", "tracks", 200, data=track_data)
         if success and 'id' in response:
             self.created_track_id = response['id']
             print(f"   Created track ID: {self.created_track_id}")
         return success
+
+    # ===== PHASE 2: PAYMENT SYSTEM TESTS =====
+    def test_create_checkout_session(self):
+        """Test creating a Stripe checkout session"""
+        if not self.created_track_id:
+            print("❌ No track ID available for checkout test")
+            return False
+            
+        checkout_data = {
+            "host_url": "https://beatvoyage-1.preview.emergentagent.com",
+            "track_ids": [self.created_track_id],
+            "user_email": self.user_data['email'] if self.user_data else "test@example.com"
+        }
+        
+        success, response = self.run_test("Create Checkout Session", "POST", "checkout/create", 200, data=checkout_data)
+        if success and 'session_id' in response:
+            self.session_id = response['session_id']
+            print(f"   Created session ID: {self.session_id}")
+            print(f"   Checkout URL: {response.get('checkout_url', 'N/A')}")
+        return success
+
+    def test_get_checkout_status(self):
+        """Test getting checkout session status"""
+        if not self.session_id:
+            print("❌ No session ID available for status test")
+            return False
+            
+        return self.run_test(
+            "Get Checkout Status", 
+            "GET", 
+            f"checkout/status/{self.session_id}", 
+            200
+        )[0]
+
+    def test_purchase_history(self):
+        """Test getting user purchase history"""
+        if not self.auth_token:
+            print("❌ No auth token available for purchase history test")
+            return False
+            
+        return self.run_test("Get Purchase History", "GET", "purchases/history", 200, auth_required=True)[0]
+
+    def test_invalid_checkout_session(self):
+        """Test creating checkout with invalid track IDs"""
+        checkout_data = {
+            "host_url": "https://beatvoyage-1.preview.emergentagent.com",
+            "track_ids": ["invalid-track-id"],
+            "user_email": "test@example.com"
+        }
+        
+        return self.run_test("Invalid Checkout Session", "POST", "checkout/create", 404, data=checkout_data)[0]
 
     def test_get_single_track(self):
         """Test getting a single track by ID"""

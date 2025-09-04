@@ -510,7 +510,8 @@ nav {
 /* High DPI Display Support */
 @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
   .hero-background {
-    background-image: url('high-res-background.jpg');
+    /* High resolution background would go here */
+    background-size: cover;
   }
 }
 

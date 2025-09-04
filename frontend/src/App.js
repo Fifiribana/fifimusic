@@ -390,9 +390,10 @@ const Navigation = () => {
           {isMenuOpen && (
             <div className="md:hidden bg-charcoal/98 border-t border-terracotta/20">
               <div className="px-2 pt-2 pb-3 space-y-1">
-                <a href="#" className="block px-3 py-2 text-white hover:text-terracotta">Accueil</a>
+                <a href="/" className="block px-3 py-2 text-white hover:text-terracotta">Accueil</a>
                 <a href="#explorer" className="block px-3 py-2 text-white hover:text-terracotta">Explorer</a>
                 <a href="#collections" className="block px-3 py-2 text-white hover:text-terracotta">Collections</a>
+                <a href="/simon-messela" className="block px-3 py-2 text-white hover:text-terracotta font-semibold">Simon Messela</a>
                 <a href="#" className="block px-3 py-2 text-white hover:text-terracotta">Artistes</a>
                 {!user && (
                   <button 

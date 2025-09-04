@@ -331,13 +331,16 @@ const Navigation = () => {
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-8">
-              <a href="#" className="text-white hover:text-terracotta transition-colors">Accueil</a>
+              <a href="/" className="text-white hover:text-terracotta transition-colors">Accueil</a>
               <div className="relative group">
                 <a href="#explorer" className="text-white hover:text-terracotta transition-colors flex items-center">
                   Explorer <Globe className="w-4 h-4 ml-1" />
                 </a>
               </div>
               <a href="#collections" className="text-white hover:text-terracotta transition-colors">Collections</a>
+              <a href="/simon-messela" className="text-white hover:text-terracotta transition-colors font-semibold">
+                Simon Messela
+              </a>
               <a href="#" className="text-white hover:text-terracotta transition-colors">Artistes</a>
             </div>
 

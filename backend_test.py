@@ -349,6 +349,22 @@ class USExploAPITester:
         
         return all(results)
 
+    def test_search_bikutsi(self):
+        """Test specific search for Bikutsi as mentioned in review request"""
+        success, data = self.run_test(
+            "Search for 'bikutsi'", 
+            "GET", 
+            "search", 
+            200, 
+            params={"q": "bikutsi"}
+        )
+        if success and data:
+            print(f"   Found {data.get('total', 0)} Bikutsi tracks")
+            if data.get('tracks'):
+                for track in data['tracks'][:3]:  # Show first 3 tracks
+                    print(f"   - {track.get('title', 'N/A')} by {track.get('artist', 'N/A')}")
+        return success
+
     def test_region_stats(self):
         """Test region statistics"""
         return self.run_test("Get Region Statistics", "GET", "regions/stats", 200)[0]

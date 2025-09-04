@@ -1,0 +1,98 @@
+{
+  "name": "US EXPLO - Universal Sound Exploration",
+  "short_name": "US EXPLO",
+  "description": "Découvrez et explorez la richesse musicale du monde entier. Plateforme créée par Simon Messela (fifi Ribana).",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#e17055",
+  "background_color": "#2d3436",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "fr",
+  "categories": ["music", "entertainment", "lifestyle"],
+  "screenshots": [
+    {
+      "src": "/images/screenshot-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png"
+    },
+    {
+      "src": "/images/screenshot-narrow.png", 
+      "sizes": "750x1334",
+      "type": "image/png"
+    }
+  ],
+  "icons": [
+    {
+      "src": "/images/icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/images/icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/images/icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/images/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/images/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/images/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/images/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/images/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Explorer la Musique",
+      "short_name": "Explorer",
+      "description": "Découvrir la musique mondiale",
+      "url": "/#explorer",
+      "icons": [{ "src": "/images/icon-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Simon Messela",
+      "short_name": "Artiste",
+      "description": "Page de l'artiste fondateur",
+      "url": "/simon-messela",
+      "icons": [{ "src": "/images/icon-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Collections",
+      "short_name": "Collections",
+      "description": "Collections musicales sélectionnées",
+      "url": "/#collections",
+      "icons": [{ "src": "/images/icon-96x96.png", "sizes": "96x96" }]
+    }
+  ]
+}

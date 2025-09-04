@@ -358,6 +358,195 @@ nav {
   }
 }
 
+/* PWA Mobile Optimizations */
+@media (max-width: 768px) {
+  /* Improved touch targets */
+  button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Better spacing for mobile */
+  .px-4 {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+  
+  /* Optimized text sizes */
+  .text-xs {
+    font-size: 0.875rem;
+  }
+  
+  .text-sm {
+    font-size: 1rem;
+  }
+  
+  /* Improved track cards for mobile */
+  .track-card {
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  /* Mobile navigation improvements */
+  .mobile-nav-item {
+    padding: 0.75rem 1rem;
+    font-size: 1.1rem;
+  }
+  
+  /* Audio player mobile optimizations */
+  .audio-player-mobile {
+    padding: 0.75rem 1rem;
+    border-radius: 0;
+  }
+  
+  /* Cart and purchase buttons */
+  .mobile-purchase-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+  }
+  
+  .mobile-purchase-buttons button {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 1rem;
+  }
+}
+
+/* PWA Safe Area Support */
+@supports (padding: max(0px)) {
+  .App {
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+  }
+  
+  .fixed-navigation {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+  
+  .audio-player {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+}
+
+/* PWA Install Button Styles */
+.pwa-install-button {
+  position: fixed;
+  bottom: 80px;
+  right: 16px;
+  z-index: 1000;
+  animation: bounceIn 0.5s ease-out;
+}
+
+@keyframes bounceIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Offline Mode Styles */
+.offline-indicator {
+  position: fixed;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #f44336;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  z-index: 1001;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* Touch Optimization */
+@media (hover: none) and (pointer: coarse) {
+  /* Remove hover effects on touch devices */
+  .hover\\:scale-105:hover {
+    transform: none;
+  }
+  
+  .hover\\:shadow-xl:hover {
+    box-shadow: inherit;
+  }
+  
+  /* Add touch-specific feedback */
+  button:active {
+    transform: scale(0.98);
+  }
+  
+  .track-card:active {
+    transform: scale(0.98);
+  }
+}
+
+/* High DPI Display Support */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .hero-background {
+    background-image: url('high-res-background.jpg');
+  }
+}
+
+/* Dark Mode Support (for PWA) */
+@media (prefers-color-scheme: dark) {
+  .pwa-install-button {
+    background: var(--terracotta);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* Performance Optimizations */
+.will-change-transform {
+  will-change: transform;
+}
+
+.will-change-scroll {
+  will-change: scroll-position;
+}
+
+/* Loading States for PWA */
+.loading-skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading-skeleton 1.5s infinite;
+}
+
+@keyframes loading-skeleton {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
 /* Animation Classes */
 .fade-in {
   animation: fadeIn 0.8s ease-out;

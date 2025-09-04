@@ -414,6 +414,7 @@ def main():
         
         # Search and Stats Tests
         ("Search Tracks", tester.test_search_tracks),
+        ("Search Bikutsi", tester.test_search_bikutsi),
         ("Region Statistics", tester.test_region_stats),
         ("Style Statistics", tester.test_style_stats),
     ]

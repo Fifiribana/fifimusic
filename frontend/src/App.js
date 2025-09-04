@@ -1044,6 +1044,7 @@ const Home = () => {
       <HeroSection />
       <InteractiveMap />
       <FeaturedCollections />
+      <FeaturedArtistSection />
       <SearchSection />
       <Footer />
       <AudioPlayer />

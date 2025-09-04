@@ -3,6 +3,7 @@
 import requests
 import sys
 import json
+import time
 from datetime import datetime
 
 class USExploAPITester:
@@ -12,6 +13,9 @@ class USExploAPITester:
         self.tests_passed = 0
         self.created_track_id = None
         self.created_collection_id = None
+        self.auth_token = None
+        self.user_data = None
+        self.session_id = None
 
     def run_test(self, name, method, endpoint, expected_status, data=None, params=None):
         """Run a single API test"""

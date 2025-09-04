@@ -1491,22 +1491,24 @@ const SimonMesselaPage = () => {
 // Main App Component
 function App() {
   return (
-    <AuthProvider>
-      <AudioProvider>
-        <CartProvider>
-          <div className="App">
-            <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/simon-messela" element={<SimonMesselaPage />} />
-                <Route path="/success" element={<SuccessPage />} />
-                <Route path="/cancel" element={<Navigate to="/" />} />
-              </Routes>
-            </BrowserRouter>
-          </div>
-        </CartProvider>
-      </AudioProvider>
-    </AuthProvider>
+    <ToastProvider>
+      <AuthProvider>
+        <AudioProvider>
+          <CartProvider>
+            <div className="App">
+              <BrowserRouter>
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/simon-messela" element={<SimonMesselaPage />} />
+                  <Route path="/success" element={<SuccessPage />} />
+                  <Route path="/cancel" element={<Navigate to="/" />} />
+                </Routes>
+              </BrowserRouter>
+            </div>
+          </CartProvider>
+        </AudioProvider>
+      </AuthProvider>
+    </ToastProvider>
   );
 }
 

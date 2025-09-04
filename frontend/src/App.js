@@ -628,15 +628,31 @@ const HeroSection = () => {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 text-center px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
-        <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 tracking-tight">
+      <div className="relative z-10 text-center px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto">
+        <div className="mb-8">
+          <div className="inline-flex items-center bg-terracotta/20 backdrop-blur-sm border border-terracotta/30 rounded-full px-6 py-3 mb-6">
+            <Music className="w-5 h-5 text-terracotta mr-2" />
+            <span className="text-terracotta font-semibold">Plateforme Musicale Mondiale</span>
+          </div>
+        </div>
+        
+        <h1 className="text-6xl md:text-8xl font-black text-white mb-6 tracking-tight bg-gradient-to-r from-white via-gold to-white bg-clip-text text-transparent animate-pulse">
           US EXPLO
         </h1>
-        <p className="text-2xl md:text-3xl text-sage mb-4 font-light">
-          Universal Sound Exploration
+        
+        <div className="relative mb-8">
+          <p className="text-3xl md:text-4xl text-sage mb-2 font-light tracking-wide">
+            Universal Sound Exploration
+          </p>
+          <div className="w-32 h-1 bg-gradient-to-r from-terracotta to-gold mx-auto rounded-full"></div>
+        </div>
+        
+        <p className="text-xl md:text-2xl text-white/95 mb-6 max-w-3xl mx-auto leading-relaxed font-light">
+          🌍 <span className="font-semibold text-gold">Discover the Pulse of the World</span> 🌍
         </p>
-        <p className="text-xl text-white/90 mb-12 max-w-2xl mx-auto leading-relaxed">
-          Discover the Pulse of the World. Explorez une carte interactive du patrimoine musical mondial avec lecture audio et achat sécurisé.
+        
+        <p className="text-lg text-white/80 mb-12 max-w-2xl mx-auto leading-relaxed">
+          Explorez une carte interactive du patrimoine musical mondial. Écoutez, découvrez et achetez de la musique authentique de tous les continents avec des aperçus audio haute qualité.
         </p>
         
         {/* CTA Buttons */}

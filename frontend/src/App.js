@@ -502,20 +502,30 @@ const Navigation = () => {
 const TrackCard = ({ track }) => {
   const { playTrack, currentTrack, isPlaying } = useAudio();
   const { addToCart } = useCart();
+  const toast = useToast();
   const [isLiked, setIsLiked] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
 
   const handleLike = async () => {
     try {
       await axios.put(`${API}/tracks/${track.id}/like`);
       setIsLiked(true);
       track.likes += 1;
+      toast.music(`❤️ Vous aimez "${track.title}" !`, 2000);
     } catch (error) {
       console.error('Error liking track:', error);
+      toast.error('Erreur lors de l\'ajout du like');
     }
+  };
+
+  const handleAddToCart = () => {
+    addToCart(track);
+    toast.success(`🛒 "${track.title}" ajouté au panier !`, 3000);
   };
 
   const handlePurchase = async () => {
     try {
+      toast.info('🔄 Création de la session de paiement...', 2000);
       const response = await axios.post(`${API}/checkout/create`, {
         host_url: window.location.origin,
         track_ids: [track.id],
@@ -523,82 +533,147 @@ const TrackCard = ({ track }) => {
       });
       
       if (response.data.checkout_url) {
-        window.location.href = response.data.checkout_url;
+        toast.success('🎵 Redirection vers le paiement sécurisé...', 2000);
+        setTimeout(() => {
+          window.location.href = response.data.checkout_url;
+        }, 1000);
       }
     } catch (error) {
       console.error('Error creating checkout:', error);
+      toast.error('❌ Erreur lors de la création du paiement');
     }
+  };
+
+  const handlePlay = () => {
+    playTrack(track);
+    toast.music(`🎧 Lecture: ${track.title} - ${track.artist}`, 2000);
   };
 
   const isCurrentlyPlaying = currentTrack?.id === track.id && isPlaying;
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden">
-      <div className="relative h-48 overflow-hidden">
+    <div 
+      className="group bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 overflow-hidden border-2 border-transparent hover:border-terracotta/20"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <div className="relative h-56 overflow-hidden">
         <img 
           src={track.artwork_url} 
           alt={track.title}
-          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent">
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent">
+          {/* Track Info Overlay */}
           <div className="absolute bottom-4 left-4 text-white">
-            <p className="text-sm opacity-90">{track.duration}s • {track.bpm} BPM</p>
+            <div className="flex items-center space-x-2 mb-2">
+              <MapPin className="w-3 h-3" />
+              <span className="text-xs font-medium">{track.region}</span>
+            </div>
+            <p className="text-sm opacity-90 flex items-center space-x-2">
+              <span>{Math.floor(track.duration / 60)}:{(track.duration % 60).toString().padStart(2, '0')}</span>
+              <span>•</span>
+              <span>{track.bpm} BPM</span>
+              {track.instrument && (
+                <>
+                  <span>•</span>
+                  <span className="text-gold">{track.instrument}</span>
+                </>
+              )}
+            </p>
           </div>
+          
+          {/* Play Button */}
           <button
-            onClick={() => playTrack(track)}
-            className="absolute top-4 right-4 bg-terracotta/90 hover:bg-terracotta p-2 rounded-full transition-colors"
+            onClick={handlePlay}
+            className={`absolute top-4 right-4 p-3 rounded-full transition-all duration-300 backdrop-blur-sm ${
+              isCurrentlyPlaying 
+                ? 'bg-gold/90 scale-110 shadow-lg shadow-gold/50' 
+                : 'bg-terracotta/90 hover:bg-terracotta hover:scale-110 shadow-lg'
+            }`}
           >
-            {isCurrentlyPlaying ? <Pause className="w-4 h-4 text-white" /> : <Play className="w-4 h-4 text-white" />}
+            {isCurrentlyPlaying ? 
+              <Pause className="w-5 h-5 text-white" /> : 
+              <Play className="w-5 h-5 text-white ml-0.5" />
+            }
           </button>
+
+          {/* Mood Badge */}
+          {track.mood && (
+            <div className="absolute top-4 left-4">
+              <span className="px-3 py-1 bg-black/50 backdrop-blur-sm text-white text-xs rounded-full border border-white/20">
+                {track.mood}
+              </span>
+            </div>
+          )}
         </div>
       </div>
       
       <div className="p-6">
-        <div className="flex justify-between items-start mb-2">
-          <div>
-            <h3 className="text-xl font-bold text-charcoal mb-1">{track.title}</h3>
-            <p className="text-sage font-medium">{track.artist}</p>
+        <div className="flex justify-between items-start mb-3">
+          <div className="flex-1">
+            <h3 className="text-xl font-bold text-charcoal mb-1 line-clamp-1">{track.title}</h3>
+            <p className="text-sage font-semibold text-lg">{track.artist}</p>
           </div>
-          <span className="text-2xl font-bold text-terracotta">{track.price.toFixed(2)}€</span>
+          <div className="text-right ml-4">
+            <span className="text-3xl font-black text-terracotta">{track.price.toFixed(2)}€</span>
+            <div className="flex items-center justify-end mt-1">
+              <Star className="w-4 h-4 text-gold fill-current" />
+              <span className="text-sm text-charcoal/60 ml-1">Qualité HD</span>
+            </div>
+          </div>
         </div>
         
-        <div className="flex items-center space-x-2 mb-3">
-          <span className="px-3 py-1 bg-sage/20 text-sage rounded-full text-sm">{track.region}</span>
-          <span className="px-3 py-1 bg-terracotta/20 text-terracotta rounded-full text-sm">{track.style}</span>
+        <div className="flex items-center space-x-2 mb-4">
+          <span className="px-3 py-1 bg-sage/15 text-sage rounded-full text-sm font-medium border border-sage/30">
+            {track.region}
+          </span>
+          <span className="px-3 py-1 bg-terracotta/15 text-terracotta rounded-full text-sm font-medium border border-terracotta/30">
+            {track.style}
+          </span>
         </div>
         
-        <p className="text-charcoal/70 text-sm mb-4">{track.description}</p>
+        <p className="text-charcoal/70 text-sm mb-5 line-clamp-2 leading-relaxed">{track.description}</p>
         
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
+        {/* Stats */}
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center space-x-4">
             <button 
               onClick={handleLike}
-              className={`flex items-center space-x-1 ${isLiked ? 'text-red-500' : 'text-charcoal/60 hover:text-red-500'}`}
+              className={`group flex items-center space-x-1 transition-all ${
+                isLiked ? 'text-red-500' : 'text-charcoal/60 hover:text-red-500'
+              }`}
             >
-              <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
-              <span className="text-sm">{track.likes}</span>
+              <Heart className={`w-4 h-4 transition-transform group-hover:scale-110 ${isLiked ? 'fill-current' : ''}`} />
+              <span className="text-sm font-medium">{track.likes}</span>
             </button>
             <div className="flex items-center space-x-1 text-charcoal/60">
               <Download className="w-4 h-4" />
-              <span className="text-sm">{track.downloads}</span>
+              <span className="text-sm font-medium">{track.downloads}</span>
+            </div>
+            <div className="flex items-center space-x-1 text-charcoal/60">
+              <Headphones className="w-4 h-4" />
+              <span className="text-sm font-medium">HD</span>
             </div>
           </div>
-          
-          <div className="flex space-x-2">
-            <button 
-              onClick={() => addToCart(track)}
-              className="px-4 py-2 bg-sage hover:bg-sage/90 text-white rounded-lg transition-colors"
-            >
-              Panier
-            </button>
-            <button 
-              onClick={handlePurchase}
-              className="px-4 py-2 bg-terracotta hover:bg-terracotta/90 text-white rounded-lg transition-colors flex items-center space-x-1"
-            >
-              <CreditCard className="w-4 h-4" />
-              <span>Acheter</span>
-            </button>
-          </div>
+        </div>
+        
+        {/* Action Buttons */}
+        <div className="flex space-x-3">
+          <button 
+            onClick={handleAddToCart}
+            className="flex-1 px-4 py-3 bg-sage hover:bg-sage/90 text-white rounded-xl transition-all font-semibold hover:shadow-lg hover:scale-105 flex items-center justify-center space-x-2"
+          >
+            <ShoppingCart className="w-4 h-4" />
+            <span>Panier</span>
+          </button>
+          <button 
+            onClick={handlePurchase}
+            className="flex-1 px-4 py-3 bg-gradient-to-r from-terracotta to-gold hover:from-gold hover:to-terracotta text-white rounded-xl transition-all font-semibold hover:shadow-lg hover:scale-105 flex items-center justify-center space-x-2"
+          >
+            <CreditCard className="w-4 h-4" />
+            <span>Acheter</span>
+          </button>
         </div>
       </div>
     </div>

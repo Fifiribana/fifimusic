@@ -1119,6 +1119,7 @@ const Home = () => {
 
   useEffect(() => {
     helloWorldApi();
+    registerServiceWorker(); // Register PWA Service Worker
   }, []);
 
   return (
@@ -1131,6 +1132,7 @@ const Home = () => {
       <SearchSection />
       <Footer />
       <AudioPlayer />
+      <PWAInstallButton />
     </div>
   );
 };

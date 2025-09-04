@@ -612,10 +612,19 @@ const HeroSection = () => {
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: `url('https://images.unsplash.com/photo-1528190303099-2408e63c79e3?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Njd8MHwxfHNlYXJjaHwyfHx3b3JsZCUyMG11c2ljfGVufDB8fHx8MTc1NzAxMTU0MXww&ixlib=rb-4.1.0&q=85')`
+          backgroundImage: `url('https://images.unsplash.com/photo-1565719178004-420e3480e2b5?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzh8MHwxfHNlYXJjaHwxfHx3b3JsZCUyMG11c2ljJTIwaW5zdHJ1bWVudHN8ZW58MHx8fHwxNzU3MDI2ODgyfDA&ixlib=rb-4.1.0&q=85')`
         }}
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-charcoal/80 via-charcoal/60 to-transparent"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-charcoal/85 via-charcoal/70 to-sage/20"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div>
+      </div>
+
+      {/* Animated Musical Notes */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 text-gold/20 text-6xl animate-pulse">♪</div>
+        <div className="absolute top-1/3 right-1/3 text-terracotta/30 text-4xl animate-bounce" style={{animationDelay: '1s'}}>♫</div>
+        <div className="absolute bottom-1/3 left-1/3 text-sage/25 text-5xl animate-pulse" style={{animationDelay: '2s'}}>♪</div>
+        <div className="absolute top-1/2 right-1/4 text-gold/15 text-3xl animate-bounce" style={{animationDelay: '0.5s'}}>♬</div>
       </div>
 
       {/* Content */}

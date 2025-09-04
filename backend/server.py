@@ -615,8 +615,9 @@ async def startup_event():
     if track_count < 10:  # Add more sample data
         logger.info("Adding additional sample data...")
         
-        # Add preview URLs to existing sample tracks
+        # Add comprehensive global music catalog
         additional_tracks = [
+            # Afrique
             TrackCreate(
                 title="Éboué Éboué",
                 artist="Charlotte Mbango",
@@ -628,9 +629,9 @@ async def startup_event():
                 mood="Énergique",
                 audio_url="https://example.com/eboue-eboue.mp3",
                 preview_url="https://example.com/previews/eboue-eboue-preview.mp3",
-                artwork_url="https://images.unsplash.com/photo-1565719178004-420e3480e2b5?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NjZ8MHwxfHNlYXJjaHw0fHxnbG9iYWwlMjBpbnN0cnVtZW50c3xlbnwwfHx8fDE3NTcwMTE1NDZ8MA&ixlib=rb-4.1.0&q=85",
+                artwork_url="https://images.unsplash.com/photo-1565719178004-420e3480e2b5?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzh8MHwxfHNlYXJjaHwxfHx3b3JsZCUyMG11c2ljJTIwaW5zdHJ1bWVudHN8ZW58MHx8fHwxNzU3MDI2ODgyfDA&ixlib=rb-4.1.0&q=85",
                 price=3.29,
-                description="Rythmes endiablés du Bikutsi camerounais traditionnel"
+                description="Rythmes endiablés du Bikutsi camerounais traditionnel avec balafons authentiques"
             ),
             TrackCreate(
                 title="Soul Makossa",
@@ -643,7 +644,7 @@ async def startup_event():
                 mood="Festif",
                 audio_url="https://example.com/soul-makossa.mp3",
                 preview_url="https://example.com/previews/soul-makossa-preview.mp3",
-                artwork_url="https://images.unsplash.com/photo-1556484687-30636164638b?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1ODB8MHwxfHNlYXJjaHwxfHxjdWx0dXJhbCUyMGRpdmVyc2l0eXxlbnwwfHx8fDE3NTcwMTE1NTJ8MA&ixlib=rb-4.1.0&q=85",
+                artwork_url="https://images.unsplash.com/photo-1556484687-30636164638b?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Nzd8MHwxfHNlYXJjaHwxfHxjdWx0dXJhbCUyMGRpdmVyc2l0eXxlbnwwfHx8fDE3NTcwMjY4ODl8MA&ixlib=rb-4.1.0&q=85",
                 price=3.79,
                 description="Le groove irrésistible du Makossa de Douala"
             ),
@@ -658,9 +659,169 @@ async def startup_event():
                 mood="Dansant",
                 audio_url="https://example.com/kinshasa-dreams.mp3",
                 preview_url="https://example.com/previews/kinshasa-dreams-preview.mp3",
-                artwork_url="https://images.unsplash.com/photo-1516146544193-b54a65682f16?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1ODB8MHwxfHNlYXJjaHwyfHxjdWx0dXJhbCUyMGRpdmVyc2l0eXxlbnwwfHx8fDE3NTcwMTE1NTJ8MA&ixlib=rb-4.1.0&q=85",
+                artwork_url="https://images.unsplash.com/photo-1516146544193-b54a65682f16?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Nzd8MHwxfHNlYXJjaHwyfHxjdWx0dXJhbCUyMGRpdmVyc2l0eXxlbnwwfHx8fDE3NTcwMjY4ODl8MA&ixlib=rb-4.1.0&q=85",
                 price=4.19,
                 description="Les mélodies ensorcelantes du Soukous congolais"
+            ),
+            TrackCreate(
+                title="Desert Winds",
+                artist="Aminata Traoré",
+                region="Afrique",
+                style="Touareg Blues",
+                instrument="Guitare électrique",
+                duration=385,
+                bpm=95,
+                mood="Hypnotique",
+                audio_url="https://example.com/desert-winds.mp3",
+                preview_url="https://example.com/previews/desert-winds-preview.mp3",
+                artwork_url="https://images.pexels.com/photos/29333488/pexels-photo-29333488.jpeg",
+                price=4.99,
+                description="Blues du désert avec guitares électriques et percussions traditionnelles"
+            ),
+            
+            # Asie
+            TrackCreate(
+                title="Chennai Nights",
+                artist="Ravi Shankar Jr.",
+                region="Asie",
+                style="Carnatic Fusion",
+                instrument="Sitar",
+                duration=420,
+                bpm=120,
+                mood="Spirituel",
+                audio_url="https://example.com/chennai-nights.mp3",
+                preview_url="https://example.com/previews/chennai-nights-preview.mp3",
+                artwork_url="https://images.unsplash.com/photo-1651931802891-1e200feafefe?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzh8MHwxfHNlYXJjaHwyfHx3b3JsZCUyMG11c2ljJTIwaW5zdHJ1bWVudHN8ZW58MHx8fHwxNzU3MDI2ODgyfDA&ixlib=rb-4.1.0&q=85",
+                price=5.29,
+                description="Fusion moderne de la musique carnatique du Tamil Nadu"
+            ),
+            TrackCreate(
+                title="Tokyo Rain",
+                artist="Yuki Tanaka",
+                region="Asie",
+                style="J-Pop Traditionnel",
+                instrument="Shamisen",
+                duration=240,
+                bpm=110,
+                mood="Mélancolique",
+                audio_url="https://example.com/tokyo-rain.mp3",
+                preview_url="https://example.com/previews/tokyo-rain-preview.mp3",
+                artwork_url="https://images.unsplash.com/photo-1624352545753-7001a44a0f19?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzh8MHwxfHNlYXJjaHw0fHx3b3JsZCUyMG11c2ljJTIwaW5zdHJ1bWVudHN8ZW58MHx8fHwxNzU3MDI2ODgyfDA&ixlib=rb-4.1.0&q=85",
+                price=4.49,
+                description="Pop japonaise moderne mêlée aux sonorités traditionnelles du shamisen"
+            ),
+            
+            # Europe
+            TrackCreate(
+                title="Andalusian Fire",
+                artist="Carmen Delgado",
+                region="Europe",
+                style="Flamenco",
+                instrument="Guitare flamenca",
+                duration=320,
+                bpm=160,
+                mood="Passionné",
+                audio_url="https://example.com/andalusian-fire.mp3",
+                preview_url="https://example.com/previews/andalusian-fire-preview.mp3",
+                artwork_url="https://images.pexels.com/photos/33710402/pexels-photo-33710402.jpeg",
+                price=4.79,
+                description="Flamenco traditionnel d'Andalousie avec guitares et castagnettes"
+            ),
+            TrackCreate(
+                title="Celtic Dreams",
+                artist="Siobhan O'Brien",
+                region="Europe",
+                style="Folk Celtique",
+                instrument="Tin Whistle",
+                duration=280,
+                bpm=90,
+                mood="Nostalgique",
+                audio_url="https://example.com/celtic-dreams.mp3",
+                preview_url="https://example.com/previews/celtic-dreams-preview.mp3",
+                artwork_url="https://images.pexels.com/photos/33714882/pexels-photo-33714882.jpeg",
+                price=3.99,
+                description="Mélodies celtiques irlandaises aux sonorités mystiques"
+            ),
+            
+            # Amérique du Sud
+            TrackCreate(
+                title="Rio Carnival",
+                artist="Carlos Santos",
+                region="Amérique du Sud",
+                style="Samba",
+                instrument="Cuíca",
+                duration=265,
+                bpm=180,
+                mood="Festif",
+                audio_url="https://example.com/rio-carnival.mp3",
+                preview_url="https://example.com/previews/rio-carnival-preview.mp3",
+                artwork_url="https://images.unsplash.com/photo-1565719178004-420e3480e2b5?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzh8MHwxfHNlYXJjaHwxfHx3b3JsZCUyMG11c2ljJTIwaW5zdHJ1bWVudHN8ZW58MHx8fHwxNzU3MDI2ODgyfDA&ixlib=rb-4.1.0&q=85",
+                price=3.99,
+                description="Samba authentique du carnaval de Rio avec percussions brésiliennes"
+            ),
+            TrackCreate(
+                title="Tango Midnight",
+                artist="Isabella Rodriguez",
+                region="Amérique du Sud",
+                style="Tango",
+                instrument="Bandoneón",
+                duration=315,
+                bpm=100,
+                mood="Romantique",
+                audio_url="https://example.com/tango-midnight.mp3",
+                preview_url="https://example.com/previews/tango-midnight-preview.mp3",
+                artwork_url="https://images.unsplash.com/photo-1556484687-30636164638b?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Nzd8MHwxfHNlYXJjaHwxfHxjdWx0dXJhbCUyMGRpdmVyc2l0eXxlbnwwfHx8fDE3NTcwMjY4ODl8MA&ixlib=rb-4.1.0&q=85",
+                price=4.59,
+                description="Tango argentin passionné avec bandoneón traditionnel"
+            ),
+            
+            # Océanie
+            TrackCreate(
+                title="Dreamtime Echoes",
+                artist="Billy Kooljarra",
+                region="Océanie",
+                style="Aborigène Contemporain",
+                instrument="Didgeridoo",
+                duration=390,
+                bpm=70,
+                mood="Spirituel",
+                audio_url="https://example.com/dreamtime-echoes.mp3",
+                preview_url="https://example.com/previews/dreamtime-echoes-preview.mp3",
+                artwork_url="https://images.unsplash.com/photo-1651931802891-1e200feafefe?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzh8MHwxfHNlYXJjaHwyfHx3b3JsZCUyMG11c2ljJTIwaW5zdHJ1bWVudHN8ZW58MHx8fHwxNzU3MDI2ODgyfDA&ixlib=rb-4.1.0&q=85",
+                price=5.99,
+                description="Musique aborigène australienne moderne avec didgeridoo authentique"
+            ),
+            
+            # Simon Messela tracks
+            TrackCreate(
+                title="Universal Pulse",
+                artist="Simon Messela (fifi Ribana)",
+                region="Global Fusion",
+                style="World Electronic",
+                instrument="Synthétiseur + Balafon",
+                duration=355,
+                bpm=128,
+                mood="Énergique",
+                audio_url="https://example.com/universal-pulse.mp3",
+                preview_url="https://example.com/previews/universal-pulse-preview.mp3",
+                artwork_url="https://images.pexels.com/photos/29333488/pexels-photo-29333488.jpeg",
+                price=6.99,
+                description="Fusion électronique mondiale par le fondateur d'US EXPLO, mêlant balafon et synthés modernes"
+            ),
+            TrackCreate(
+                title="Bikutsi 2025",
+                artist="Simon Messela (fifi Ribana)",
+                region="Afrique",
+                style="Bikutsi Moderne",
+                instrument="Balafon + Synthétiseur",
+                duration=285,
+                bpm=145,
+                mood="Énergique",
+                audio_url="https://example.com/bikutsi-2025.mp3",
+                preview_url="https://example.com/previews/bikutsi-2025-preview.mp3",
+                artwork_url="https://images.unsplash.com/photo-1516146544193-b54a65682f16?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Nzd8MHwxfHNlYXJjaHwyfHxjdWx0dXJhbCUyMGRpdmVyc2l0eXxlbnwwfHx8fDE3NTcwMjY4ODl8MA&ixlib=rb-4.1.0&q=85",
+                price=5.99,
+                description="Réinterprétation moderne du Bikutsi traditionnel camerounais"
             )
         ]
         

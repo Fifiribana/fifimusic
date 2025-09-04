@@ -207,7 +207,7 @@ class USExploAPITester:
             return False
             
         checkout_data = {
-            "host_url": "https://worldbeats-10.preview.emergentagent.com",
+            "host_url": "http://localhost:8001",
             "track_ids": [self.created_track_id],
             "user_email": self.user_data['email'] if self.user_data else "test@example.com"
         }

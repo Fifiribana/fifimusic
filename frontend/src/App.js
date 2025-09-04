@@ -719,7 +719,81 @@ const FeaturedCollections = () => {
   );
 };
 
-// Search Section Component
+// Featured Artist Section (Simon Messela)
+const FeaturedArtistSection = () => {
+  return (
+    <section className="py-20 bg-gradient-to-r from-charcoal to-sage/30">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          {/* Text Content */}
+          <div className="text-white">
+            <div className="mb-6">
+              <span className="px-4 py-2 bg-gold text-charcoal rounded-full font-bold text-sm uppercase tracking-wide">
+                Artiste Fondateur
+              </span>
+            </div>
+            <h2 className="text-4xl md:text-5xl font-bold mb-6">
+              Simon Messela
+              <span className="block text-2xl md:text-3xl text-terracotta font-light mt-2">
+                (fifi Ribana)
+              </span>
+            </h2>
+            <p className="text-xl text-white/90 leading-relaxed mb-8">
+              Créateur d'US EXPLO et artiste polyvalent, Simon Messela voyage à travers tous les styles musicaux. 
+              Du Bikutsi traditionnel camerounais aux fusions électroniques modernes, il incarne l'esprit 
+              d'exploration universelle qui définit notre plateforme.
+            </p>
+            
+            <div className="flex flex-wrap gap-3 mb-8">
+              <span className="px-4 py-2 bg-terracotta/20 text-terracotta rounded-lg font-semibold">
+                Bikutsi
+              </span>
+              <span className="px-4 py-2 bg-sage/20 text-sage rounded-lg font-semibold">
+                Makossa
+              </span>
+              <span className="px-4 py-2 bg-gold/20 text-gold rounded-lg font-semibold">
+                World Fusion
+              </span>
+              <span className="px-4 py-2 bg-white/20 text-white rounded-lg font-semibold">
+                Afrobeat Electronic
+              </span>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-4">
+              <a 
+                href="/simon-messela"
+                className="px-8 py-4 bg-terracotta hover:bg-terracotta/90 text-white font-semibold rounded-full transition-all transform hover:scale-105 shadow-lg text-center"
+              >
+                Découvrir Mes Créations
+              </a>
+              <button className="px-8 py-4 border-2 border-white/30 text-white hover:bg-white/10 font-semibold rounded-full transition-all backdrop-blur-sm">
+                Écouter un Extrait
+              </button>
+            </div>
+          </div>
+          
+          {/* Image Content */}
+          <div className="relative">
+            <div className="relative z-10">
+              <img 
+                src="https://images.unsplash.com/photo-1528190303099-2408e63c79e3?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Njd8MHwxfHNlYXJjaHwyfHx3b3JsZCUyMG11c2ljfGVufDB8fHx8MTc1NzAxMTU0MXww&ixlib=rb-4.1.0&q=85"
+                alt="Simon Messela - Fondateur US EXPLO"
+                className="w-full max-w-md mx-auto rounded-3xl shadow-2xl border-4 border-gold"
+              />
+              <div className="absolute -bottom-6 -right-6 bg-terracotta text-white p-4 rounded-full shadow-xl">
+                <Music className="w-8 h-8" />
+              </div>
+            </div>
+            
+            {/* Decorative elements */}
+            <div className="absolute top-4 -left-4 w-24 h-24 bg-sage/30 rounded-full blur-xl"></div>
+            <div className="absolute bottom-4 -right-4 w-32 h-32 bg-gold/30 rounded-full blur-xl"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
 const SearchSection = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);

@@ -372,6 +372,23 @@ const LoginModal = ({ isOpen, onClose }) => {
   );
 };
 
+// PWA Install Button Component
+const PWAInstallButton = () => {
+  const { isInstallable, installPWA } = usePWAInstall();
+
+  if (!isInstallable) return null;
+
+  return (
+    <button
+      onClick={installPWA}
+      className="fixed bottom-20 right-4 bg-terracotta hover:bg-terracotta/90 text-white px-6 py-3 rounded-full shadow-lg z-50 flex items-center space-x-2 transition-all transform hover:scale-105"
+    >
+      <Download className="w-5 h-5" />
+      <span className="font-semibold">Installer l'App</span>
+    </button>
+  );
+};
+
 // Navigation Component
 const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);

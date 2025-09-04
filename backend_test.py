@@ -358,24 +358,45 @@ class USExploAPITester:
         return self.run_test("Get Style Statistics", "GET", "styles/stats", 200)[0]
 
 def main():
-    print("🎵 US EXPLO API Testing Suite")
+    print("🎵 US EXPLO API Testing Suite - Phase 2")
     print("=" * 50)
     
     tester = USExploAPITester()
     
-    # Test sequence
+    # Test sequence - Phase 2 comprehensive testing
     tests = [
+        # Basic API Tests
         ("API Status", tester.test_api_status),
+        
+        # Phase 2: Authentication Tests
+        ("User Registration", tester.test_user_registration),
+        ("User Login", tester.test_user_login),
+        ("Get Current User", tester.test_get_current_user),
+        ("Invalid Login", tester.test_invalid_login),
+        
+        # Phase 2: Enhanced Track Tests
         ("Get Tracks", tester.test_get_tracks),
+        ("New Styles (Bikutsi/Makossa/Soukous)", tester.test_get_tracks_with_new_styles),
+        ("Get Featured Tracks", tester.test_get_featured_tracks),
         ("Track Filtering", tester.test_get_tracks_with_filters),
-        ("Create Track", tester.test_create_track),
+        ("Create Track with Preview", tester.test_create_track_with_preview),
         ("Get Single Track", tester.test_get_single_track),
         ("Like Track", tester.test_like_track),
         ("Download Track", tester.test_download_track),
+        
+        # Phase 2: Payment System Tests
+        ("Create Checkout Session", tester.test_create_checkout_session),
+        ("Get Checkout Status", tester.test_get_checkout_status),
+        ("Purchase History", tester.test_purchase_history),
+        ("Invalid Checkout Session", tester.test_invalid_checkout_session),
+        
+        # Collection Tests
         ("Get Collections", tester.test_get_collections),
         ("Get Featured Collections", tester.test_get_featured_collections),
         ("Create Collection", tester.test_create_collection),
         ("Get Single Collection", tester.test_get_single_collection),
+        
+        # Search and Stats Tests
         ("Search Tracks", tester.test_search_tracks),
         ("Region Statistics", tester.test_region_stats),
         ("Style Statistics", tester.test_style_stats),
@@ -394,7 +415,7 @@ def main():
     
     # Print final results
     print("\n" + "=" * 50)
-    print(f"📊 FINAL RESULTS")
+    print(f"📊 FINAL RESULTS - PHASE 2")
     print(f"Tests passed: {tester.tests_passed}/{tester.tests_run}")
     print(f"Success rate: {(tester.tests_passed/tester.tests_run)*100:.1f}%")
     
@@ -402,8 +423,18 @@ def main():
         print(f"\n❌ Failed test categories:")
         for test in failed_tests:
             print(f"   - {test}")
+        print(f"\n🔧 PHASE 2 CRITICAL FEATURES TO FIX:")
+        critical_features = [
+            "User Registration", "User Login", "Get Current User",
+            "Create Checkout Session", "Get Checkout Status",
+            "New Styles (Bikutsi/Makossa/Soukous)", "Get Featured Tracks"
+        ]
+        critical_failed = [test for test in failed_tests if test in critical_features]
+        if critical_failed:
+            for test in critical_failed:
+                print(f"   🚨 {test}")
     else:
-        print(f"\n🎉 All test categories passed!")
+        print(f"\n🎉 All Phase 2 test categories passed!")
     
     return 0 if len(failed_tests) == 0 else 1
 

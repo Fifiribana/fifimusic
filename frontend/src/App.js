@@ -973,6 +973,151 @@ const Home = () => {
   );
 };
 
+// Simon Messela Artist Page Component
+const SimonMesselaPage = () => {
+  const [artistTracks, setArtistTracks] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchSimonTracks = async () => {
+      try {
+        const response = await axios.get(`${API}/search?q=Simon Messela`);
+        setArtistTracks(response.data.tracks);
+      } catch (error) {
+        console.error('Error fetching Simon tracks:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSimonTracks();
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-charcoal to-sage/20">
+      <Navigation />
+      
+      {/* Hero Section */}
+      <section className="pt-20 pb-16 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <div className="relative mb-8">
+              <div className="w-48 h-48 mx-auto rounded-full overflow-hidden border-4 border-terracotta shadow-2xl">
+                <img 
+                  src="https://images.unsplash.com/photo-1528190303099-2408e63c79e3?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Njd8MHwxfHNlYXJjaHwyfHx3b3JsZCUyMG11c2ljfGVufDB8fHx8MTc1NzAxMTU0MXww&ixlib=rb-4.1.0&q=85"
+                  alt="Simon Messela"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 bg-gold text-charcoal px-6 py-2 rounded-full font-bold shadow-lg">
+                Fondateur & Artiste
+              </div>
+            </div>
+            
+            <h1 className="text-5xl md:text-6xl font-bold text-white mb-4">
+              Simon Messela
+            </h1>
+            <p className="text-2xl md:text-3xl text-terracotta mb-6 font-light">
+              (fifi Ribana)
+            </p>
+            <p className="text-xl text-white/90 max-w-4xl mx-auto leading-relaxed mb-8">
+              Fondateur d'US EXPLO et artiste polyvalent, Simon Messela incarne l'esprit d'exploration musicale universelle. 
+              Maître de tous les styles, de l'Afrobeat traditionnel au Bikutsi moderne, il crée des ponts entre les cultures 
+              à travers sa musique innovante.
+            </p>
+            
+            <div className="flex flex-wrap justify-center gap-4 mb-12">
+              <span className="px-6 py-3 bg-terracotta/20 text-terracotta rounded-full font-semibold">
+                🎵 Bikutsi
+              </span>
+              <span className="px-6 py-3 bg-sage/20 text-sage rounded-full font-semibold">
+                🎸 Makossa
+              </span>
+              <span className="px-6 py-3 bg-gold/20 text-gold rounded-full font-semibold">
+                🌍 World Fusion
+              </span>
+              <span className="px-6 py-3 bg-white/20 text-white rounded-full font-semibold">
+                🎹 Afrobeat Electronic
+              </span>
+            </div>
+          </div>
+
+          {/* Vision Section */}
+          <div className="bg-white/10 backdrop-blur-md rounded-3xl p-8 mb-16 border border-white/20">
+            <h2 className="text-3xl font-bold text-white mb-6 text-center">Ma Vision</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-terracotta rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Globe className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">Exploration Universelle</h3>
+                <p className="text-white/80">Créer des ponts entre toutes les cultures musicales du monde</p>
+              </div>
+              <div className="text-center">
+                <div className="w-16 h-16 bg-sage rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Music className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">Innovation Créative</h3>
+                <p className="text-white/80">Fusionner tradition et modernité dans chaque composition</p>
+              </div>
+              <div className="text-center">
+                <div className="w-16 h-16 bg-gold rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Users className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">Partage Culturel</h3>
+                <p className="text-white/80">Permettre à chacun de découvrir la richesse musicale mondiale</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Artist Tracks Section */}
+      <section className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold text-charcoal mb-6">
+              Mes Créations
+            </h2>
+            <p className="text-xl text-charcoal/70 max-w-3xl mx-auto">
+              Découvrez ma discographie variée, reflétant l'esprit d'US EXPLO : 
+              une exploration sans limites des sonorités du monde
+            </p>
+          </div>
+
+          {loading ? (
+            <div className="text-center py-16">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-terracotta mx-auto mb-4"></div>
+              <p className="text-charcoal/70">Chargement de mes créations...</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {artistTracks.map(track => (
+                <TrackCard key={track.id} track={track} />
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Quote Section */}
+      <section className="py-16 bg-gradient-to-r from-terracotta/20 to-sage/20">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <blockquote className="text-3xl md:text-4xl font-bold text-charcoal mb-8 italic">
+            "La musique n'a pas de frontières. Elle est le langage universel qui unit les cœurs et transcende les cultures."
+          </blockquote>
+          <p className="text-xl text-charcoal/80 font-semibold">
+            - Simon Messela (fifi Ribana), Fondateur d'US EXPLO
+          </p>
+        </div>
+      </section>
+
+      <Footer />
+      <AudioPlayer />
+    </div>
+  );
+};
+
 // Main App Component
 function App() {
   return (
@@ -983,6 +1128,7 @@ function App() {
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Home />} />
+                <Route path="/simon-messela" element={<SimonMesselaPage />} />
                 <Route path="/success" element={<SuccessPage />} />
                 <Route path="/cancel" element={<Navigate to="/" />} />
               </Routes>

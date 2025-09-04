@@ -934,6 +934,7 @@ const SearchSection = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [activeFilter, setActiveFilter] = useState("all");
 
   const handleSearch = async (query) => {
     if (!query.trim()) {
@@ -954,8 +955,20 @@ const SearchSection = () => {
 
   const handleTagClick = (tag) => {
     setSearchQuery(tag);
+    setActiveFilter(tag);
     handleSearch(tag);
   };
+
+  const popularSearches = [
+    { name: "Bikutsi", emoji: "🥁", region: "Cameroun" },
+    { name: "Makossa", emoji: "🎺", region: "Cameroun" },
+    { name: "Soukous", emoji: "🎸", region: "Congo" },
+    { name: "Afrobeat", emoji: "🎵", region: "Nigeria" },
+    { name: "Flamenco", emoji: "💃", region: "Espagne" },
+    { name: "Bollywood", emoji: "🎭", region: "Inde" },
+    { name: "Reggae", emoji: "🌴", region: "Jamaïque" },
+    { name: "Samba", emoji: "🎉", region: "Brésil" }
+  ];
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -966,53 +979,116 @@ const SearchSection = () => {
   }, [searchQuery]);
 
   return (
-    <section className="py-20 bg-gradient-to-br from-charcoal via-charcoal/95 to-sage/20">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-          Trouvez Votre Son
-        </h2>
-        <p className="text-xl text-white/80 mb-12 max-w-2xl mx-auto">
-          Recherchez par style, humeur, instrument ou continent et écoutez des extraits
-        </p>
+    <section className="py-24 bg-gradient-to-br from-charcoal via-charcoal/95 to-sage/20 relative overflow-hidden">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 opacity-5">
+        <div className="absolute top-10 left-10 text-6xl">🎵</div>
+        <div className="absolute top-20 right-20 text-4xl">🎶</div>
+        <div className="absolute bottom-20 left-20 text-5xl">🎼</div>
+        <div className="absolute bottom-10 right-10 text-3xl">🎤</div>
+      </div>
+
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+        <div className="mb-12">
+          <h2 className="text-5xl md:text-6xl font-bold text-white mb-6 bg-gradient-to-r from-white via-gold to-white bg-clip-text text-transparent">
+            🔍 Explorez Notre Univers Musical
+          </h2>
+          <p className="text-xl md:text-2xl text-white/90 mb-4 max-w-3xl mx-auto leading-relaxed">
+            Recherchez par style, humeur, instrument ou continent
+          </p>
+          <p className="text-lg text-white/70 max-w-2xl mx-auto">
+            Plus de 200 pistes authentiques du monde entier vous attendent
+          </p>
+        </div>
         
-        <div className="relative max-w-2xl mx-auto">
-          <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
-            <Search className="h-6 w-6 text-sage" />
+        {/* Enhanced Search Bar */}
+        <div className="relative max-w-3xl mx-auto mb-12">
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
+              <Search className="h-7 w-7 text-sage" />
+            </div>
+            <input
+              type="text"
+              placeholder="Ex: Bikutsi, Makossa, Soukous, Sitar, Flamenco..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-16 pr-8 py-6 bg-white/15 backdrop-blur-lg border-2 border-white/25 rounded-2xl text-white placeholder-white/60 focus:outline-none focus:ring-4 focus:ring-terracotta/50 focus:border-terracotta text-xl font-medium shadow-2xl"
+            />
+            {isSearching && (
+              <div className="absolute inset-y-0 right-0 pr-6 flex items-center">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-terracotta"></div>
+              </div>
+            )}
           </div>
-          <input
-            type="text"
-            placeholder="Ex: Bikutsi, Makossa, Soukous, Sitar..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-14 pr-6 py-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-full text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-terracotta focus:border-transparent text-lg"
-          />
         </div>
 
-        <div className="mt-8 flex flex-wrap justify-center gap-3">
-          {["Bikutsi", "Makossa", "Soukous", "Afrobeat", "Flamenco", "Bollywood", "Reggae", "Samba"].map((tag, index) => (
+        {/* Popular Searches with Emojis */}
+        <div className="mb-12">
+          <h3 className="text-2xl font-semibold text-white mb-6">🔥 Recherches Populaires</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {popularSearches.map((search, index) => (
+              <button 
+                key={index}
+                onClick={() => handleTagClick(search.name)}
+                className={`group relative p-4 rounded-2xl backdrop-blur-sm border transition-all hover:scale-105 ${
+                  activeFilter === search.name
+                    ? 'bg-terracotta/30 border-terracotta text-white shadow-lg shadow-terracotta/25'
+                    : 'bg-white/10 hover:bg-white/20 text-white border-white/20 hover:border-white/40'
+                }`}
+              >
+                <div className="text-3xl mb-2">{search.emoji}</div>
+                <div className="font-bold text-lg mb-1">{search.name}</div>
+                <div className="text-sm opacity-75">{search.region}</div>
+                <div className="absolute inset-0 bg-gradient-to-r from-terracotta/0 to-gold/20 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Quick Filters */}
+        <div className="mb-12 flex flex-wrap justify-center gap-3">
+          <span className="text-white/70 font-medium mr-4">Filtres rapides:</span>
+          {["Énergique", "Spirituel", "Dansant", "Romantique", "Festif"].map((mood, index) => (
             <button 
               key={index}
-              onClick={() => handleTagClick(tag)}
-              className="px-6 py-2 bg-white/10 hover:bg-white/20 text-white rounded-full backdrop-blur-sm border border-white/20 transition-all hover:scale-105"
+              onClick={() => handleTagClick(mood)}
+              className="px-4 py-2 bg-sage/20 hover:bg-sage/30 text-sage border border-sage/30 hover:border-sage/50 rounded-full backdrop-blur-sm transition-all hover:scale-105 font-medium"
             >
-              {tag}
+              {mood}
             </button>
           ))}
         </div>
 
         {/* Search Results */}
         {isSearching && (
-          <div className="mt-12 text-white">Recherche en cours...</div>
+          <div className="mt-12 bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20">
+            <div className="flex items-center justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-terracotta mr-3"></div>
+              <span className="text-white text-lg">Recherche en cours dans notre bibliothèque mondiale...</span>
+            </div>
+          </div>
         )}
 
         {searchResults.length > 0 && (
           <div className="mt-12">
-            <h3 className="text-2xl font-bold text-white mb-8">Résultats de recherche</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20 mb-8">
+              <h3 className="text-3xl font-bold text-white mb-2">
+                🎯 {searchResults.length} Résultat{searchResults.length > 1 ? 's' : ''} Trouvé{searchResults.length > 1 ? 's' : ''}
+              </h3>
+              <p className="text-white/70">Pour votre recherche: <span className="text-gold font-semibold">"{searchQuery}"</span></p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {searchResults.slice(0, 6).map(track => (
                 <TrackCard key={track.id} track={track} />
               ))}
             </div>
+            {searchResults.length > 6 && (
+              <div className="mt-8">
+                <button className="px-8 py-4 bg-gradient-to-r from-terracotta to-gold text-white font-bold rounded-full hover:scale-105 transition-transform shadow-lg">
+                  Voir tous les {searchResults.length} résultats
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

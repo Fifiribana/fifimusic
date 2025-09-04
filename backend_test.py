@@ -7,7 +7,7 @@ import time
 from datetime import datetime
 
 class USExploAPITester:
-    def __init__(self, base_url="https://beatvoyage-1.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://worldbeats-10.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.tests_run = 0
         self.tests_passed = 0
@@ -207,7 +207,7 @@ class USExploAPITester:
             return False
             
         checkout_data = {
-            "host_url": "https://beatvoyage-1.preview.emergentagent.com",
+            "host_url": "https://worldbeats-10.preview.emergentagent.com",
             "track_ids": [self.created_track_id],
             "user_email": self.user_data['email'] if self.user_data else "test@example.com"
         }
@@ -243,7 +243,7 @@ class USExploAPITester:
     def test_invalid_checkout_session(self):
         """Test creating checkout with invalid track IDs"""
         checkout_data = {
-            "host_url": "https://beatvoyage-1.preview.emergentagent.com",
+            "host_url": "https://worldbeats-10.preview.emergentagent.com",
             "track_ids": ["invalid-track-id"],
             "user_email": "test@example.com"
         }

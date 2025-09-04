@@ -267,9 +267,8 @@ async def login(user_data: UserLogin):
     return Token(access_token=access_token, token_type="bearer", user=user_response)
 
 @api_router.get("/auth/me", response_model=UserResponse)
-async def get_current_user_info(current_user: User = security):
-    user = await get_current_user(current_user)
-    return UserResponse(**user.dict())
+async def get_current_user_info(current_user: User = Depends(get_current_user)):
+    return UserResponse(**current_user.dict())
 
 # Music Track Routes
 @api_router.get("/tracks", response_model=List[Track])

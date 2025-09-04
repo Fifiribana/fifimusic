@@ -65,6 +65,87 @@ class USExploAPITester:
         """Test API root endpoint"""
         return self.run_test("API Status", "GET", "", 200)
 
+    # ===== PHASE 2: AUTHENTICATION TESTS =====
+    def test_user_registration(self):
+        """Test user registration"""
+        timestamp = int(time.time())
+        user_data = {
+            "email": f"test_user_{timestamp}@example.com",
+            "username": f"testuser_{timestamp}",
+            "password": "TestPassword123!"
+        }
+        
+        success, response = self.run_test("User Registration", "POST", "auth/register", 200, data=user_data)
+        if success and 'access_token' in response:
+            self.auth_token = response['access_token']
+            self.user_data = response['user']
+            print(f"   Registered user: {self.user_data['username']}")
+            print(f"   Token received: {self.auth_token[:20]}...")
+        return success
+
+    def test_user_login(self):
+        """Test user login with existing credentials"""
+        if not self.user_data:
+            print("❌ No user data available for login test")
+            return False
+            
+        login_data = {
+            "email": self.user_data['email'],
+            "password": "TestPassword123!"
+        }
+        
+        success, response = self.run_test("User Login", "POST", "auth/login", 200, data=login_data)
+        if success and 'access_token' in response:
+            # Update token with login token
+            self.auth_token = response['access_token']
+            print(f"   Login successful for: {response['user']['username']}")
+        return success
+
+    def test_get_current_user(self):
+        """Test getting current user profile"""
+        if not self.auth_token:
+            print("❌ No auth token available for user profile test")
+            return False
+            
+        return self.run_test("Get Current User", "GET", "auth/me", 200, auth_required=True)[0]
+
+    def test_invalid_login(self):
+        """Test login with invalid credentials"""
+        invalid_data = {
+            "email": "nonexistent@example.com",
+            "password": "wrongpassword"
+        }
+        
+        return self.run_test("Invalid Login", "POST", "auth/login", 401, data=invalid_data)[0]
+
+    # ===== PHASE 2: ENHANCED TRACK TESTS =====
+    def test_get_tracks_with_new_styles(self):
+        """Test getting tracks with new Phase 2 styles"""
+        new_styles = ["Bikutsi", "Makossa", "Soukous"]
+        
+        results = []
+        for style in new_styles:
+            success, data = self.run_test(
+                f"Get {style} Tracks", 
+                "GET", 
+                "tracks", 
+                200, 
+                params={"style": style}
+            )
+            results.append(success)
+        
+        return all(results)
+
+    def test_get_featured_tracks(self):
+        """Test getting featured tracks"""
+        return self.run_test(
+            "Get Featured Tracks", 
+            "GET", 
+            "tracks", 
+            200, 
+            params={"featured": True}
+        )[0]
+
     def test_get_tracks(self):
         """Test getting all tracks"""
         return self.run_test("Get All Tracks", "GET", "tracks", 200)

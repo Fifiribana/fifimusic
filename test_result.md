@@ -312,9 +312,6 @@ metadata:
 
 test_plan:
   current_focus:
-    - "API de base et authentification"
-    - "Système de pistes musicales"
-    - "Paiements Stripe intégrés"
     - "Interface moderne avec design Neo-Ethnic"
     - "Carte interactive mondiale"
     - "Lecteur audio intégré"

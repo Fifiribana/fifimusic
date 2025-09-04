@@ -1,81 +1,523 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, createContext, useContext } from "react";
 import "./App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import axios from "axios";
-import { Search, Globe, Music, Users, ShoppingCart, User, Menu, X, Play, Pause, Volume2 } from "lucide-react";
+import { Search, Globe, Music, Users, ShoppingCart, User, Menu, X, Play, Pause, Volume2, Heart, Download, CreditCard, LogIn, UserPlus, LogOut } from "lucide-react";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-// Navigation Component
-const Navigation = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+// Auth Context
+const AuthContext = createContext();
+
+const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(localStorage.getItem('token'));
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (token) {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      // Verify token and get user info
+      axios.get(`${API}/auth/me`)
+        .then(response => {
+          setUser(response.data);
+        })
+        .catch(() => {
+          localStorage.removeItem('token');
+          setToken(null);
+          delete axios.defaults.headers.common['Authorization'];
+        })
+        .finally(() => setLoading(false));
+    } else {
+      setLoading(false);
+    }
+  }, [token]);
+
+  const login = (userData, userToken) => {
+    setUser(userData);
+    setToken(userToken);
+    localStorage.setItem('token', userToken);
+    axios.defaults.headers.common['Authorization'] = `Bearer ${userToken}`;
+  };
+
+  const logout = () => {
+    setUser(null);
+    setToken(null);
+    localStorage.removeItem('token');
+    delete axios.defaults.headers.common['Authorization'];
+  };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-charcoal/95 backdrop-blur-md border-b border-terracotta/20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-terracotta to-gold rounded-lg flex items-center justify-center">
-              <Music className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-white">US EXPLO</h1>
-              <p className="text-xs text-sage">Universal Sound Exploration</p>
-            </div>
-          </div>
-
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
-            <a href="#" className="text-white hover:text-terracotta transition-colors">Accueil</a>
-            <div className="relative group">
-              <a href="#" className="text-white hover:text-terracotta transition-colors flex items-center">
-                Explorer <Globe className="w-4 h-4 ml-1" />
-              </a>
-            </div>
-            <a href="#" className="text-white hover:text-terracotta transition-colors">Artistes</a>
-            <a href="#" className="text-white hover:text-terracotta transition-colors">Blog</a>
-            <a href="#" className="text-white hover:text-terracotta transition-colors">Boutique</a>
-          </div>
-
-          {/* Right side icons */}
-          <div className="hidden md:flex items-center space-x-4">
-            <button className="p-2 text-white hover:text-terracotta transition-colors">
-              <ShoppingCart className="w-5 h-5" />
-            </button>
-            <button className="p-2 text-white hover:text-terracotta transition-colors">
-              <User className="w-5 h-5" />
-            </button>
-          </div>
-
-          {/* Mobile menu button */}
-          <button 
-            className="md:hidden p-2 text-white"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-          >
-            {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
-        </div>
-
-        {/* Mobile Navigation */}
-        {isMenuOpen && (
-          <div className="md:hidden bg-charcoal/98 border-t border-terracotta/20">
-            <div className="px-2 pt-2 pb-3 space-y-1">
-              <a href="#" className="block px-3 py-2 text-white hover:text-terracotta">Accueil</a>
-              <a href="#" className="block px-3 py-2 text-white hover:text-terracotta">Explorer</a>
-              <a href="#" className="block px-3 py-2 text-white hover:text-terracotta">Artistes</a>
-              <a href="#" className="block px-3 py-2 text-white hover:text-terracotta">Blog</a>
-              <a href="#" className="block px-3 py-2 text-white hover:text-terracotta">Boutique</a>
-            </div>
-          </div>
-        )}
-      </div>
-    </nav>
+    <AuthContext.Provider value={{ user, token, login, logout, loading }}>
+      {children}
+    </AuthContext.Provider>
   );
 };
 
-// Hero Section Component
+const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within AuthProvider');
+  }
+  return context;
+};
+
+// Audio Player Context
+const AudioContext = createContext();
+
+const AudioProvider = ({ children }) => {
+  const [currentTrack, setCurrentTrack] = useState(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [audio, setAudio] = useState(null);
+
+  const playTrack = (track) => {
+    if (audio) {
+      audio.pause();
+    }
+    
+    const newAudio = new Audio(track.preview_url || track.audio_url);
+    newAudio.addEventListener('ended', () => setIsPlaying(false));
+    newAudio.addEventListener('pause', () => setIsPlaying(false));
+    newAudio.addEventListener('play', () => setIsPlaying(true));
+    
+    setAudio(newAudio);
+    setCurrentTrack(track);
+    newAudio.play();
+  };
+
+  const pauseTrack = () => {
+    if (audio) {
+      audio.pause();
+    }
+  };
+
+  const resumeTrack = () => {
+    if (audio) {
+      audio.play();
+    }
+  };
+
+  return (
+    <AudioContext.Provider value={{ 
+      currentTrack, 
+      isPlaying, 
+      playTrack, 
+      pauseTrack, 
+      resumeTrack 
+    }}>
+      {children}
+    </AudioContext.Provider>
+  );
+};
+
+const useAudio = () => {
+  const context = useContext(AudioContext);
+  if (!context) {
+    throw new Error('useAudio must be used within AudioProvider');
+  }
+  return context;
+};
+
+// Cart Context
+const CartContext = createContext();
+
+const CartProvider = ({ children }) => {
+  const [cartItems, setCartItems] = useState([]);
+
+  const addToCart = (track) => {
+    setCartItems(prev => {
+      const exists = prev.find(item => item.id === track.id);
+      if (exists) return prev;
+      return [...prev, track];
+    });
+  };
+
+  const removeFromCart = (trackId) => {
+    setCartItems(prev => prev.filter(item => item.id !== trackId));
+  };
+
+  const clearCart = () => {
+    setCartItems([]);
+  };
+
+  const totalPrice = cartItems.reduce((sum, item) => sum + item.price, 0);
+
+  return (
+    <CartContext.Provider value={{ 
+      cartItems, 
+      addToCart, 
+      removeFromCart, 
+      clearCart, 
+      totalPrice 
+    }}>
+      {children}
+    </CartContext.Provider>
+  );
+};
+
+const useCart = () => {
+  const context = useContext(CartContext);
+  if (!context) {
+    throw new Error('useCart must be used within CartProvider');
+  }
+  return context;
+};
+
+// Audio Player Component
+const AudioPlayer = () => {
+  const { currentTrack, isPlaying, pauseTrack, resumeTrack } = useAudio();
+
+  if (!currentTrack) return null;
+
+  return (
+    <div className="fixed bottom-0 left-0 right-0 bg-charcoal text-white p-4 z-50 border-t border-terracotta/20">
+      <div className="max-w-7xl mx-auto flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <img 
+            src={currentTrack.artwork_url} 
+            alt={currentTrack.title}
+            className="w-12 h-12 rounded-lg object-cover"
+          />
+          <div>
+            <h4 className="font-semibold">{currentTrack.title}</h4>
+            <p className="text-sm text-sage">{currentTrack.artist}</p>
+          </div>
+        </div>
+        
+        <div className="flex items-center space-x-4">
+          <button
+            onClick={isPlaying ? pauseTrack : resumeTrack}
+            className="bg-terracotta hover:bg-terracotta/90 p-3 rounded-full transition-colors"
+          >
+            {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+          </button>
+          <Volume2 className="w-5 h-5 text-sage" />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Auth Components
+const LoginModal = ({ isOpen, onClose }) => {
+  const [isLogin, setIsLogin] = useState(true);
+  const [formData, setFormData] = useState({
+    email: '',
+    username: '',
+    password: ''
+  });
+  const [error, setError] = useState('');
+  const { login } = useAuth();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    try {
+      const endpoint = isLogin ? '/auth/login' : '/auth/register';
+      const payload = isLogin 
+        ? { email: formData.email, password: formData.password }
+        : formData;
+
+      const response = await axios.post(`${API}${endpoint}`, payload);
+      login(response.data.user, response.data.access_token);
+      onClose();
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Une erreur est survenue');
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold text-charcoal">
+            {isLogin ? 'Connexion' : 'Inscription'}
+          </h2>
+          <button onClick={onClose} className="text-charcoal hover:text-terracotta">
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-charcoal mb-2">Email</label>
+            <input
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({...formData, email: e.target.value})}
+              className="w-full px-4 py-3 border border-sage/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-terracotta"
+              required
+            />
+          </div>
+
+          {!isLogin && (
+            <div>
+              <label className="block text-sm font-medium text-charcoal mb-2">Nom d'utilisateur</label>
+              <input
+                type="text"
+                value={formData.username}
+                onChange={(e) => setFormData({...formData, username: e.target.value})}
+                className="w-full px-4 py-3 border border-sage/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-terracotta"
+                required
+              />
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium text-charcoal mb-2">Mot de passe</label>
+            <input
+              type="password"
+              value={formData.password}
+              onChange={(e) => setFormData({...formData, password: e.target.value})}
+              className="w-full px-4 py-3 border border-sage/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-terracotta"
+              required
+            />
+          </div>
+
+          {error && (
+            <div className="text-red-500 text-sm bg-red-50 p-3 rounded-lg">{error}</div>
+          )}
+
+          <button
+            type="submit"
+            className="w-full bg-terracotta hover:bg-terracotta/90 text-white py-3 rounded-lg font-semibold transition-colors"
+          >
+            {isLogin ? 'Se connecter' : "S'inscrire"}
+          </button>
+        </form>
+
+        <div className="mt-6 text-center">
+          <button
+            onClick={() => setIsLogin(!isLogin)}
+            className="text-terracotta hover:text-gold"
+          >
+            {isLogin 
+              ? "Pas de compte ? S'inscrire" 
+              : "Déjà un compte ? Se connecter"
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Navigation Component
+const Navigation = () => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const { user, logout } = useAuth();
+  const { cartItems } = useCart();
+
+  return (
+    <>
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-charcoal/95 backdrop-blur-md border-b border-terracotta/20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            {/* Logo */}
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-terracotta to-gold rounded-lg flex items-center justify-center">
+                <Music className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-white">US EXPLO</h1>
+                <p className="text-xs text-sage">Universal Sound Exploration</p>
+              </div>
+            </div>
+
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center space-x-8">
+              <a href="#" className="text-white hover:text-terracotta transition-colors">Accueil</a>
+              <div className="relative group">
+                <a href="#explorer" className="text-white hover:text-terracotta transition-colors flex items-center">
+                  Explorer <Globe className="w-4 h-4 ml-1" />
+                </a>
+              </div>
+              <a href="#collections" className="text-white hover:text-terracotta transition-colors">Collections</a>
+              <a href="#" className="text-white hover:text-terracotta transition-colors">Artistes</a>
+            </div>
+
+            {/* Right side icons */}
+            <div className="hidden md:flex items-center space-x-4">
+              <div className="relative">
+                <button className="p-2 text-white hover:text-terracotta transition-colors">
+                  <ShoppingCart className="w-5 h-5" />
+                </button>
+                {cartItems.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-terracotta text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {cartItems.length}
+                  </span>
+                )}
+              </div>
+              
+              {user ? (
+                <div className="flex items-center space-x-2">
+                  <span className="text-white text-sm">Bonjour, {user.username}</span>
+                  <button 
+                    onClick={logout}
+                    className="p-2 text-white hover:text-terracotta transition-colors"
+                  >
+                    <LogOut className="w-5 h-5" />
+                  </button>
+                </div>
+              ) : (
+                <button 
+                  onClick={() => setShowLoginModal(true)}
+                  className="p-2 text-white hover:text-terracotta transition-colors"
+                >
+                  <User className="w-5 h-5" />
+                </button>
+              )}
+            </div>
+
+            {/* Mobile menu button */}
+            <button 
+              className="md:hidden p-2 text-white"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+            >
+              {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
+
+          {/* Mobile Navigation */}
+          {isMenuOpen && (
+            <div className="md:hidden bg-charcoal/98 border-t border-terracotta/20">
+              <div className="px-2 pt-2 pb-3 space-y-1">
+                <a href="#" className="block px-3 py-2 text-white hover:text-terracotta">Accueil</a>
+                <a href="#explorer" className="block px-3 py-2 text-white hover:text-terracotta">Explorer</a>
+                <a href="#collections" className="block px-3 py-2 text-white hover:text-terracotta">Collections</a>
+                <a href="#" className="block px-3 py-2 text-white hover:text-terracotta">Artistes</a>
+                {!user && (
+                  <button 
+                    onClick={() => setShowLoginModal(true)}
+                    className="block w-full text-left px-3 py-2 text-white hover:text-terracotta"
+                  >
+                    Connexion
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </nav>
+
+      <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
+    </>
+  );
+};
+
+// Track Card Component
+const TrackCard = ({ track }) => {
+  const { playTrack, currentTrack, isPlaying } = useAudio();
+  const { addToCart } = useCart();
+  const [isLiked, setIsLiked] = useState(false);
+
+  const handleLike = async () => {
+    try {
+      await axios.put(`${API}/tracks/${track.id}/like`);
+      setIsLiked(true);
+      track.likes += 1;
+    } catch (error) {
+      console.error('Error liking track:', error);
+    }
+  };
+
+  const handlePurchase = async () => {
+    try {
+      const response = await axios.post(`${API}/checkout/create`, {
+        host_url: window.location.origin,
+        track_ids: [track.id],
+        user_email: "guest@example.com"
+      });
+      
+      if (response.data.checkout_url) {
+        window.location.href = response.data.checkout_url;
+      }
+    } catch (error) {
+      console.error('Error creating checkout:', error);
+    }
+  };
+
+  const isCurrentlyPlaying = currentTrack?.id === track.id && isPlaying;
+
+  return (
+    <div className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden">
+      <div className="relative h-48 overflow-hidden">
+        <img 
+          src={track.artwork_url} 
+          alt={track.title}
+          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent">
+          <div className="absolute bottom-4 left-4 text-white">
+            <p className="text-sm opacity-90">{track.duration}s • {track.bpm} BPM</p>
+          </div>
+          <button
+            onClick={() => playTrack(track)}
+            className="absolute top-4 right-4 bg-terracotta/90 hover:bg-terracotta p-2 rounded-full transition-colors"
+          >
+            {isCurrentlyPlaying ? <Pause className="w-4 h-4 text-white" /> : <Play className="w-4 h-4 text-white" />}
+          </button>
+        </div>
+      </div>
+      
+      <div className="p-6">
+        <div className="flex justify-between items-start mb-2">
+          <div>
+            <h3 className="text-xl font-bold text-charcoal mb-1">{track.title}</h3>
+            <p className="text-sage font-medium">{track.artist}</p>
+          </div>
+          <span className="text-2xl font-bold text-terracotta">{track.price.toFixed(2)}€</span>
+        </div>
+        
+        <div className="flex items-center space-x-2 mb-3">
+          <span className="px-3 py-1 bg-sage/20 text-sage rounded-full text-sm">{track.region}</span>
+          <span className="px-3 py-1 bg-terracotta/20 text-terracotta rounded-full text-sm">{track.style}</span>
+        </div>
+        
+        <p className="text-charcoal/70 text-sm mb-4">{track.description}</p>
+        
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <button 
+              onClick={handleLike}
+              className={`flex items-center space-x-1 ${isLiked ? 'text-red-500' : 'text-charcoal/60 hover:text-red-500'}`}
+            >
+              <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
+              <span className="text-sm">{track.likes}</span>
+            </button>
+            <div className="flex items-center space-x-1 text-charcoal/60">
+              <Download className="w-4 h-4" />
+              <span className="text-sm">{track.downloads}</span>
+            </div>
+          </div>
+          
+          <div className="flex space-x-2">
+            <button 
+              onClick={() => addToCart(track)}
+              className="px-4 py-2 bg-sage hover:bg-sage/90 text-white rounded-lg transition-colors"
+            >
+              Panier
+            </button>
+            <button 
+              onClick={handlePurchase}
+              className="px-4 py-2 bg-terracotta hover:bg-terracotta/90 text-white rounded-lg transition-colors flex items-center space-x-1"
+            >
+              <CreditCard className="w-4 h-4" />
+              <span>Acheter</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Hero Section Component  
 const HeroSection = () => {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
@@ -98,16 +540,22 @@ const HeroSection = () => {
           Universal Sound Exploration
         </p>
         <p className="text-xl text-white/90 mb-12 max-w-2xl mx-auto leading-relaxed">
-          Discover the Pulse of the World. Explorez une carte interactive du patrimoine musical mondial.
+          Discover the Pulse of the World. Explorez une carte interactive du patrimoine musical mondial avec lecture audio et achat sécurisé.
         </p>
         
         {/* CTA Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-          <button className="px-8 py-4 bg-terracotta hover:bg-terracotta/90 text-white font-semibold rounded-full transition-all transform hover:scale-105 shadow-lg">
+          <button 
+            onClick={() => document.getElementById('explorer').scrollIntoView({ behavior: 'smooth' })}
+            className="px-8 py-4 bg-terracotta hover:bg-terracotta/90 text-white font-semibold rounded-full transition-all transform hover:scale-105 shadow-lg"
+          >
             Commencer l'Exploration
           </button>
-          <button className="px-8 py-4 border-2 border-white/30 text-white hover:bg-white/10 font-semibold rounded-full transition-all backdrop-blur-sm">
-            Découvrir la Carte
+          <button 
+            onClick={() => document.getElementById('collections').scrollIntoView({ behavior: 'smooth' })}
+            className="px-8 py-4 border-2 border-white/30 text-white hover:bg-white/10 font-semibold rounded-full transition-all backdrop-blur-sm"
+          >
+            Découvrir les Collections
           </button>
         </div>
       </div>
@@ -125,9 +573,10 @@ const HeroSection = () => {
 // Interactive World Map Component
 const InteractiveMap = () => {
   const [selectedRegion, setSelectedRegion] = useState(null);
+  const [regionTracks, setRegionTracks] = useState([]);
 
   const regions = [
-    { name: "Afrique", x: 48, y: 60, description: "Afrobeat, Highlife, Soukous" },
+    { name: "Afrique", x: 48, y: 60, description: "Afrobeat, Highlife, Soukous, Bikutsi, Makossa" },
     { name: "Europe", x: 48, y: 35, description: "Flamenco, Folk, Electronic" },
     { name: "Asie", x: 70, y: 45, description: "Bollywood, Gamelan, K-Pop" },
     { name: "Amérique du Sud", x: 25, y: 70, description: "Samba, Tango, Cumbia" },
@@ -135,15 +584,32 @@ const InteractiveMap = () => {
     { name: "Océanie", x: 85, y: 75, description: "Didgeridoo, Pacific Islander" }
   ];
 
+  const fetchRegionTracks = async (region) => {
+    try {
+      const response = await axios.get(`${API}/tracks?region=${region}&limit=6`);
+      setRegionTracks(response.data);
+    } catch (error) {
+      console.error('Error fetching region tracks:', error);
+    }
+  };
+
+  const handleRegionClick = (region) => {
+    const newRegion = selectedRegion === region.name ? null : region.name;
+    setSelectedRegion(newRegion);
+    if (newRegion) {
+      fetchRegionTracks(newRegion);
+    }
+  };
+
   return (
-    <section className="py-20 bg-gradient-to-b from-sage/10 to-white">
+    <section id="explorer" className="py-20 bg-gradient-to-b from-sage/10 to-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold text-charcoal mb-6">
             Explorez le Monde Musical
           </h2>
           <p className="text-xl text-charcoal/70 max-w-3xl mx-auto leading-relaxed">
-            Cliquez sur une région pour découvrir ses richesses musicales
+            Cliquez sur une région pour découvrir ses richesses musicales et écouter des extraits
           </p>
         </div>
 
@@ -170,7 +636,7 @@ const InteractiveMap = () => {
                     : 'bg-gold hover:bg-terracotta'
                 } animate-pulse`}
                 style={{ left: `${region.x}%`, top: `${region.y}%` }}
-                onClick={() => setSelectedRegion(selectedRegion === region.name ? null : region.name)}
+                onClick={() => handleRegionClick(region)}
               >
                 <span className="sr-only">{region.name}</span>
               </button>
@@ -179,14 +645,22 @@ const InteractiveMap = () => {
 
           {/* Region Info */}
           {selectedRegion && (
-            <div className="mt-8 p-6 bg-gradient-to-r from-sage/10 to-terracotta/10 rounded-2xl border border-terracotta/20">
-              <h3 className="text-2xl font-bold text-charcoal mb-2">{selectedRegion}</h3>
-              <p className="text-charcoal/70">
-                {regions.find(r => r.name === selectedRegion)?.description}
-              </p>
-              <button className="mt-4 px-6 py-2 bg-terracotta text-white rounded-full hover:bg-terracotta/90 transition-colors">
-                Explorer cette région
-              </button>
+            <div className="mt-8 space-y-6">
+              <div className="p-6 bg-gradient-to-r from-sage/10 to-terracotta/10 rounded-2xl border border-terracotta/20">
+                <h3 className="text-2xl font-bold text-charcoal mb-2">{selectedRegion}</h3>
+                <p className="text-charcoal/70 mb-4">
+                  {regions.find(r => r.name === selectedRegion)?.description}
+                </p>
+              </div>
+
+              {/* Region Tracks */}
+              {regionTracks.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {regionTracks.map(track => (
+                    <TrackCard key={track.id} track={track} />
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -197,71 +671,45 @@ const InteractiveMap = () => {
 
 // Featured Collections Component
 const FeaturedCollections = () => {
-  const collections = [
-    {
-      title: "Découvertes du Mois",
-      description: "Les dernières trouvailles musicales du monde entier",
-      image: "https://images.unsplash.com/photo-1700419420072-8583b28f2036?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NjZ8MHwxfHNlYXJjaHwzfHxnbG9iYWwlMjBpbnN0cnVtZW50c3xlbnwwfHx8fDE3NTcwMTE1NDZ8MA&ixlib=rb-4.1.0&q=85",
-      tracks: 24
-    },
-    {
-      title: "Rythmes Africains",
-      description: "L'essence vibrant de l'Afrique musicale",
-      image: "https://images.unsplash.com/photo-1565719178004-420e3480e2b5?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NjZ8MHwxfHNlYXJjaHw0fHxnbG9iYWwlMjBpbnN0cnVtZW50c3xlbnwwfHx8fDE3NTcwMTE1NDZ8MA&ixlib=rb-4.1.0&q=85",
-      tracks: 32
-    },
-    {
-      title: "Mélodies Orientales",
-      description: "Les sons mystiques de l'Orient",
-      image: "https://images.unsplash.com/photo-1551973732-463437696ab3?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Njd8MHwxfHNlYXJjaHwxfHx3b3JsZCUyMG11c2ljfGVufDB8fHx8MTc1NzAxMTU0MXww&ixlib=rb-4.1.0&q=85",
-      tracks: 18
-    }
-  ];
+  const [collections, setCollections] = useState([]);
+  const [tracks, setTracks] = useState([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [collectionsResponse, tracksResponse] = await Promise.all([
+          axios.get(`${API}/collections?featured=true`),
+          axios.get(`${API}/tracks?limit=12`)
+        ]);
+        setCollections(collectionsResponse.data);
+        setTracks(tracksResponse.data);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   return (
-    <section className="py-20 bg-white">
+    <section id="collections" className="py-20 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold text-charcoal mb-6">
             Collections Sélectionnées
           </h2>
           <p className="text-xl text-charcoal/70 max-w-3xl mx-auto">
-            Découvrez nos playlists soigneusement organisées par style et région
+            Découvrez nos playlists soigneusement organisées par style et région, avec écoute et achat instantané
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {collections.map((collection, index) => (
-            <div 
-              key={index} 
-              className="group bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden border border-sage/20"
-            >
-              <div className="relative h-64 overflow-hidden">
-                <img 
-                  src={collection.image} 
-                  alt={collection.title}
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-charcoal/60 via-transparent to-transparent"></div>
-                <div className="absolute bottom-4 left-4 text-white">
-                  <p className="text-sm opacity-90">{collection.tracks} morceaux</p>
-                </div>
-              </div>
-              <div className="p-6">
-                <h3 className="text-2xl font-bold text-charcoal mb-3 group-hover:text-terracotta transition-colors">
-                  {collection.title}
-                </h3>
-                <p className="text-charcoal/70 mb-4">
-                  {collection.description}
-                </p>
-                <button className="flex items-center space-x-2 text-terracotta hover:text-gold font-semibold transition-colors">
-                  <Play className="w-4 h-4" />
-                  <span>Écouter maintenant</span>
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+        {tracks.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {tracks.map(track => (
+              <TrackCard key={track.id} track={track} />
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );
@@ -270,6 +718,38 @@ const FeaturedCollections = () => {
 // Search Section Component
 const SearchSection = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+
+  const handleSearch = async (query) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const response = await axios.get(`${API}/search?q=${encodeURIComponent(query)}`);
+      setSearchResults(response.data.tracks);
+    } catch (error) {
+      console.error('Error searching:', error);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleTagClick = (tag) => {
+    setSearchQuery(tag);
+    handleSearch(tag);
+  };
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      handleSearch(searchQuery);
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery]);
 
   return (
     <section className="py-20 bg-gradient-to-br from-charcoal via-charcoal/95 to-sage/20">
@@ -278,7 +758,7 @@ const SearchSection = () => {
           Trouvez Votre Son
         </h2>
         <p className="text-xl text-white/80 mb-12 max-w-2xl mx-auto">
-          Recherchez par style, humeur, instrument ou continent
+          Recherchez par style, humeur, instrument ou continent et écoutez des extraits
         </p>
         
         <div className="relative max-w-2xl mx-auto">
@@ -287,28 +767,40 @@ const SearchSection = () => {
           </div>
           <input
             type="text"
-            placeholder="Ex: Afrobeat, Sitar, Méditation..."
+            placeholder="Ex: Bikutsi, Makossa, Soukous, Sitar..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-14 pr-6 py-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-full text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-terracotta focus:border-transparent text-lg"
           />
-          <button className="absolute inset-y-0 right-0 pr-2 flex items-center">
-            <div className="bg-terracotta hover:bg-terracotta/90 p-3 rounded-full transition-colors">
-              <Search className="h-5 w-5 text-white" />
-            </div>
-          </button>
         </div>
 
         <div className="mt-8 flex flex-wrap justify-center gap-3">
-          {["Afrobeat", "Flamenco", "Bollywood", "Reggae", "Samba", "Folk"].map((tag, index) => (
+          {["Bikutsi", "Makossa", "Soukous", "Afrobeat", "Flamenco", "Bollywood", "Reggae", "Samba"].map((tag, index) => (
             <button 
               key={index}
+              onClick={() => handleTagClick(tag)}
               className="px-6 py-2 bg-white/10 hover:bg-white/20 text-white rounded-full backdrop-blur-sm border border-white/20 transition-all hover:scale-105"
             >
               {tag}
             </button>
           ))}
         </div>
+
+        {/* Search Results */}
+        {isSearching && (
+          <div className="mt-12 text-white">Recherche en cours...</div>
+        )}
+
+        {searchResults.length > 0 && (
+          <div className="mt-12">
+            <h3 className="text-2xl font-bold text-white mb-8">Résultats de recherche</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {searchResults.slice(0, 6).map(track => (
+                <TrackCard key={track.id} track={track} />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );
@@ -333,6 +825,7 @@ const Footer = () => {
             <p className="text-white/70 max-w-md leading-relaxed">
               Découvrez et explorez la richesse musicale du monde entier. 
               Chaque son raconte une histoire, chaque mélodie porte une culture.
+              Écoutez, achetez et téléchargez en toute sécurité.
             </p>
           </div>
           
@@ -349,9 +842,9 @@ const Footer = () => {
           <div>
             <h4 className="text-lg font-semibold mb-4">Communauté</h4>
             <ul className="space-y-2 text-white/70">
-              <li><a href="#" className="hover:text-terracotta transition-colors">Blog</a></li>
               <li><a href="#" className="hover:text-terracotta transition-colors">Artistes</a></li>
-              <li><a href="#" className="hover:text-terracotta transition-colors">Newsletter</a></li>
+              <li><a href="#" className="hover:text-terracotta transition-colors">Téléchargements</a></li>
+              <li><a href="#" className="hover:text-terracotta transition-colors">Support</a></li>
               <li><a href="#" className="hover:text-terracotta transition-colors">Contact</a></li>
             </ul>
           </div>
@@ -362,6 +855,93 @@ const Footer = () => {
         </div>
       </div>
     </footer>
+  );
+};
+
+// Success Page Component
+const SuccessPage = () => {
+  const [sessionId, setSessionId] = useState(null);
+  const [paymentStatus, setPaymentStatus] = useState('checking');
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sessionIdParam = urlParams.get('session_id');
+    
+    if (sessionIdParam) {
+      setSessionId(sessionIdParam);
+      checkPaymentStatus(sessionIdParam);
+    }
+  }, []);
+
+  const checkPaymentStatus = async (sessionId, attempts = 0) => {
+    const maxAttempts = 5;
+    if (attempts >= maxAttempts) {
+      setPaymentStatus('timeout');
+      return;
+    }
+
+    try {
+      const response = await axios.get(`${API}/checkout/status/${sessionId}`);
+      
+      if (response.data.payment_status === 'paid') {
+        setPaymentStatus('success');
+      } else if (response.data.status === 'expired') {
+        setPaymentStatus('expired');
+      } else {
+        setTimeout(() => checkPaymentStatus(sessionId, attempts + 1), 2000);
+      }
+    } catch (error) {
+      console.error('Error checking payment status:', error);
+      setPaymentStatus('error');
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-sage/20 to-terracotta/20 flex items-center justify-center">
+      <div className="max-w-md mx-auto bg-white rounded-2xl shadow-xl p-8 text-center">
+        {paymentStatus === 'checking' && (
+          <div>
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-terracotta mx-auto mb-4"></div>
+            <h2 className="text-2xl font-bold text-charcoal mb-2">Vérification du paiement...</h2>
+            <p className="text-charcoal/70">Veuillez patienter</p>
+          </div>
+        )}
+
+        {paymentStatus === 'success' && (
+          <div>
+            <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold text-charcoal mb-2">Paiement réussi !</h2>
+            <p className="text-charcoal/70 mb-6">Merci pour votre achat. Vous pouvez maintenant télécharger vos morceaux.</p>
+            <button 
+              onClick={() => window.location.href = '/'}
+              className="bg-terracotta hover:bg-terracotta/90 text-white px-6 py-3 rounded-lg font-semibold"
+            >
+              Retour à l'accueil
+            </button>
+          </div>
+        )}
+
+        {paymentStatus === 'error' && (
+          <div>
+            <div className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <X className="w-8 h-8 text-white" />
+            </div>
+            <h2 className="text-2xl font-bold text-charcoal mb-2">Erreur de paiement</h2>
+            <p className="text-charcoal/70 mb-6">Une erreur s'est produite lors de la vérification du paiement.</p>
+            <button 
+              onClick={() => window.location.href = '/'}
+              className="bg-terracotta hover:bg-terracotta/90 text-white px-6 py-3 rounded-lg font-semibold"
+            >
+              Retour à l'accueil
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 
@@ -388,6 +968,7 @@ const Home = () => {
       <FeaturedCollections />
       <SearchSection />
       <Footer />
+      <AudioPlayer />
     </div>
   );
 };
@@ -395,13 +976,21 @@ const Home = () => {
 // Main App Component
 function App() {
   return (
-    <div className="App">
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Home />} />
-        </Routes>
-      </BrowserRouter>
-    </div>
+    <AuthProvider>
+      <AudioProvider>
+        <CartProvider>
+          <div className="App">
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/success" element={<SuccessPage />} />
+                <Route path="/cancel" element={<Navigate to="/" />} />
+              </Routes>
+            </BrowserRouter>
+          </div>
+        </CartProvider>
+      </AudioProvider>
+    </AuthProvider>
   );
 }
 

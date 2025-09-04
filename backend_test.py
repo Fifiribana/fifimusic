@@ -243,7 +243,7 @@ class USExploAPITester:
     def test_invalid_checkout_session(self):
         """Test creating checkout with invalid track IDs"""
         checkout_data = {
-            "host_url": "https://worldbeats-10.preview.emergentagent.com",
+            "host_url": "http://localhost:8001",
             "track_ids": ["invalid-track-id"],
             "user_email": "test@example.com"
         }

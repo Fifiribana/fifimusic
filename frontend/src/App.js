@@ -1278,6 +1278,7 @@ const SimonMesselaPage = () => {
 
       <Footer />
       <AudioPlayer />
+      <PWAInstallButton />
     </div>
   );
 };

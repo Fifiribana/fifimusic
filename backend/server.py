@@ -522,11 +522,10 @@ async def stripe_webhook(request: Request):
 
 # User Purchase History
 @api_router.get("/purchases/history")
-async def get_purchase_history(current_user: User = security):
+async def get_purchase_history(current_user: User = Depends(get_current_user)):
     """Get user's purchase history"""
-    user = await get_current_user(current_user)
     transactions = await db.payment_transactions.find({
-        "user_email": user.email,
+        "user_email": current_user.email,
         "payment_status": "completed"
     }).to_list(100)
     

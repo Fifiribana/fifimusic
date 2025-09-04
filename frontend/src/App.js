@@ -656,19 +656,47 @@ const HeroSection = () => {
         </p>
         
         {/* CTA Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+        <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
           <button 
             onClick={() => document.getElementById('explorer').scrollIntoView({ behavior: 'smooth' })}
-            className="px-8 py-4 bg-terracotta hover:bg-terracotta/90 text-white font-semibold rounded-full transition-all transform hover:scale-105 shadow-lg"
+            className="group relative px-10 py-5 bg-gradient-to-r from-terracotta to-gold hover:from-gold hover:to-terracotta text-white font-bold rounded-full transition-all transform hover:scale-110 shadow-2xl border-2 border-white/20 hover:border-white/40 backdrop-blur-sm"
           >
-            Commencer l'Exploration
+            <span className="relative z-10 flex items-center">
+              <Globe className="w-5 h-5 mr-2" />
+              Commencer l'Exploration
+            </span>
+            <div className="absolute inset-0 bg-white/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity blur-xl"></div>
           </button>
+          
           <button 
             onClick={() => document.getElementById('collections').scrollIntoView({ behavior: 'smooth' })}
-            className="px-8 py-4 border-2 border-white/30 text-white hover:bg-white/10 font-semibold rounded-full transition-all backdrop-blur-sm"
+            className="group px-10 py-5 border-2 border-white/40 text-white hover:bg-white/15 font-bold rounded-full transition-all backdrop-blur-md hover:scale-105 shadow-lg hover:shadow-xl"
           >
-            Découvrir les Collections
+            <span className="flex items-center">
+              <Music className="w-5 h-5 mr-2" />
+              Collections Sélectionnées
+            </span>
           </button>
+        </div>
+        
+        {/* Stats */}
+        <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-2xl mx-auto">
+          <div className="text-center">
+            <div className="text-3xl font-bold text-gold mb-1">50+</div>
+            <div className="text-sm text-white/70">Pays</div>
+          </div>
+          <div className="text-center">
+            <div className="text-3xl font-bold text-terracotta mb-1">200+</div>
+            <div className="text-sm text-white/70">Pistes</div>
+          </div>
+          <div className="text-center">
+            <div className="text-3xl font-bold text-sage mb-1">15+</div>
+            <div className="text-sm text-white/70">Styles</div>
+          </div>
+          <div className="text-center">
+            <div className="text-3xl font-bold text-gold mb-1">24/7</div>
+            <div className="text-sm text-white/70">Écoute</div>
+          </div>
         </div>
       </div>
 

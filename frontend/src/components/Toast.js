@@ -11,6 +11,9 @@ export const useToast = () => {
   return context;
 };
 
+// Export also from main App for compatibility
+export { useAuth } from '../App';
+
 export const ToastProvider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
 

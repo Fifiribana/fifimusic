@@ -292,6 +292,7 @@ class Track(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     title: str
     artist: str
+    user_id: Optional[str] = None  # Owner of the track
     region: str
     style: str
     instrument: Optional[str] = None

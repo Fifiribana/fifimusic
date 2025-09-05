@@ -1641,11 +1641,15 @@ async def get_marketplace_listings(
                 price_conditions["$gte"] = price_min
             if price_max:
                 price_conditions["$lte"] = price_max
-            additional_match["$or"] = []
-            if "sale_price" in [listing_type, None]:
-                additional_match["$or"].append({"sale_price": price_conditions})
-            if "license_price" in [listing_type, None]:
-                additional_match["$or"].append({"license_price": price_conditions})
+            
+            price_or_conditions = []
+            if not listing_type or listing_type == "sale" or listing_type == "both":
+                price_or_conditions.append({"sale_price": price_conditions})
+            if not listing_type or listing_type == "license" or listing_type == "both":
+                price_or_conditions.append({"license_price": price_conditions})
+                
+            if price_or_conditions:
+                additional_match["$or"] = price_or_conditions
         
         if additional_match:
             pipeline.append({"$match": additional_match})

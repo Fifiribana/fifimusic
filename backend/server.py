@@ -83,6 +83,86 @@ class UserResponse(BaseModel):
     preferences: Optional[List[str]] = []
     favorite_regions: Optional[List[str]] = []
 
+# Musician Community Models
+class MusicianProfile(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    stage_name: str
+    bio: Optional[str] = None
+    instruments: List[str] = []
+    genres: List[str] = []
+    experience_level: str = "Intermédiaire"  # Débutant, Intermédiaire, Avancé, Professionnel
+    region: str = "International"
+    city: Optional[str] = None
+    looking_for: List[str] = []  # Collaboration, Jam Session, Apprentissage, Performance
+    social_links: Optional[Dict[str, str]] = {}
+    profile_image: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    is_active: bool = True
+
+class CommunityPost(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    title: str
+    content: str
+    post_type: str = "idea"  # idea, collaboration, question, event, showcase
+    tags: List[str] = []
+    media_urls: List[str] = []
+    likes_count: int = 0
+    comments_count: int = 0
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    is_active: bool = True
+
+class PostComment(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    post_id: str
+    user_id: str
+    content: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class PostLike(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    post_id: str
+    user_id: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class MusicianMessage(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    sender_id: str
+    recipient_id: str
+    subject: Optional[str] = None
+    content: str
+    is_read: bool = False
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+# Request/Response Models for Community
+class MusicianProfileCreate(BaseModel):
+    stage_name: str
+    bio: Optional[str] = None
+    instruments: List[str] = []
+    genres: List[str] = []
+    experience_level: str = "Intermédiaire"
+    region: str = "International"
+    city: Optional[str] = None
+    looking_for: List[str] = []
+    social_links: Optional[Dict[str, str]] = {}
+
+class PostCreate(BaseModel):
+    title: str
+    content: str
+    post_type: str = "idea"
+    tags: List[str] = []
+
+class CommentCreate(BaseModel):
+    content: str
+
+class MessageCreate(BaseModel):
+    recipient_id: str
+    subject: Optional[str] = None
+    content: str
+
 class Token(BaseModel):
     access_token: str
     token_type: str

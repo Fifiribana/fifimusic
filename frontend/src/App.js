@@ -1517,6 +1517,7 @@ function App() {
                   <Route path="/" element={<Home />} />
                   <Route path="/simon-messela" element={<SimonMesselaPage />} />
                   <Route path="/admin" element={<AdminPage />} />
+                  <Route path="/community" element={<CommunityPage />} />
                   <Route path="/success" element={<SuccessPage />} />
                   <Route path="/cancel" element={<Navigate to="/" />} />
                 </Routes>

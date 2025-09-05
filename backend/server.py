@@ -328,6 +328,100 @@ class SongCreationRequest(BaseModel):
     tempo: str = "modéré"
     song_title: Optional[str] = None
 
+# Solidarity & Support Models
+class MusicianCampaign(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    creator_id: str
+    title: str
+    description: str
+    project_type: str = "album"  # album, concert, equipment, studio, emergency
+    goal_amount: float
+    current_amount: float = 0.0
+    currency: str = "EUR"
+    deadline: datetime
+    story: str
+    needs: List[str] = []  # What they need help with
+    region: str = "International"
+    music_style: str = "Divers"
+    status: str = "active"  # active, completed, paused, cancelled
+    featured: bool = False
+    image_url: Optional[str] = None
+    video_url: Optional[str] = None
+    updates: List[Dict] = []
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class Donation(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    campaign_id: str
+    donor_id: Optional[str] = None  # Anonymous if None
+    donor_name: str = "Anonyme"
+    amount: float
+    currency: str = "EUR"
+    message: Optional[str] = None
+    is_anonymous: bool = False
+    payment_status: str = "pending"  # pending, completed, failed
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class SupportAdvice(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    advisor_id: str
+    category: str  # physical, spiritual, creative, technical, business
+    title: str
+    content: str
+    advice_type: str = "general"  # general, personal_response
+    target_audience: str = "all"  # all, beginners, professionals, struggling
+    tags: List[str] = []
+    likes_count: int = 0
+    is_featured: bool = False
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class SupportRequest(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    requester_id: str
+    category: str  # same as above
+    title: str
+    description: str
+    urgency: str = "normal"  # low, normal, high, urgent
+    status: str = "open"  # open, in_progress, resolved, closed
+    responses: List[Dict] = []
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+# Request Models for Solidarity
+class CampaignCreateRequest(BaseModel):
+    title: str
+    description: str
+    project_type: str = "album"
+    goal_amount: float
+    deadline_days: int = 30  # Days from now
+    story: str
+    needs: List[str] = []
+    region: str = "International"
+    music_style: str = "Divers"
+    image_url: Optional[str] = None
+    video_url: Optional[str] = None
+
+class DonationCreateRequest(BaseModel):
+    campaign_id: str
+    amount: float
+    donor_name: str = "Anonyme"
+    message: Optional[str] = None
+    is_anonymous: bool = False
+
+class AdviceCreateRequest(BaseModel):
+    category: str
+    title: str
+    content: str
+    advice_type: str = "general"
+    target_audience: str = "all"
+    tags: List[str] = []
+
+class SupportRequestCreate(BaseModel):
+    category: str
+    title: str
+    description: str
+    urgency: str = "normal"
+
 # Request/Response Models for AI
 class ChatMessageCreate(BaseModel):
     content: str

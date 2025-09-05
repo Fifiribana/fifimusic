@@ -51,6 +51,12 @@ IMAGES_DIR.mkdir(exist_ok=True)
 # Mount static files for serving uploaded content
 app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 
+# Mount frontend build files
+FRONTEND_BUILD_DIR = Path(__file__).parent.parent / "frontend" / "build"
+if FRONTEND_BUILD_DIR.exists():
+    app.mount("/static", StaticFiles(directory=str(FRONTEND_BUILD_DIR / "static")), name="static")
+    app.mount("/", StaticFiles(directory=str(FRONTEND_BUILD_DIR), html=True), name="frontend")
+
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 

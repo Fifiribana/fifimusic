@@ -1508,6 +1508,7 @@ function App() {
                 <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/simon-messela" element={<SimonMesselaPage />} />
+                  <Route path="/admin" element={<AdminPage />} />
                   <Route path="/success" element={<SuccessPage />} />
                   <Route path="/cancel" element={<Navigate to="/" />} />
                 </Routes>

@@ -18,7 +18,8 @@ import {
   Mic,
   Radio,
   Trophy,
-  Calendar
+  Calendar,
+  X
 } from 'lucide-react';
 import { useToast } from '../components/Toast';
 

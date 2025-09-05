@@ -1341,6 +1341,12 @@ const SuccessPage = () => {
   );
 };
 
+// AI Chat Wrapper Component
+const AIChatWrapper = () => {
+  const { user, token } = useAuth();
+  return <AIChat user={user} authToken={token} />;
+};
+
 // Main Home Component
 const Home = () => {
   const helloWorldApi = async () => {
@@ -1368,6 +1374,7 @@ const Home = () => {
       <Footer />
       <AudioPlayer />
       <PWAInstallButton />
+      <AIChatWrapper />
     </div>
   );
 };

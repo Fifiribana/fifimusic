@@ -654,6 +654,455 @@ class USExploAPITester:
             if os.path.exists(temp_file.name):
                 os.unlink(temp_file.name)
 
+    # ===== MUSICIAN COMMUNITY TESTS =====
+    def __init__(self, base_url="http://localhost:8001/api"):
+        self.base_url = base_url
+        self.tests_run = 0
+        self.tests_passed = 0
+        self.created_track_id = None
+        self.created_collection_id = None
+        self.auth_token = None
+        self.user_data = None
+        self.session_id = None
+        self.uploaded_track_id = None
+        # Community-specific variables
+        self.musician_profile_id = None
+        self.created_post_id = None
+        self.second_user_token = None
+        self.second_user_data = None
+        self.sent_message_id = None
+
+    def test_create_musician_profile(self):
+        """Test creating a musician profile with African instruments and genres"""
+        if not self.auth_token:
+            print("❌ No auth token available for musician profile test")
+            return False
+            
+        profile_data = {
+            "stage_name": "Kofi Asante",
+            "bio": "Musicien traditionnel du Ghana spécialisé dans les rythmes Afrobeat et Highlife. Passionné par la fusion entre traditions ancestrales et sonorités modernes.",
+            "instruments": ["Balafon", "Djembé", "Guitare", "Kora"],
+            "genres": ["Afrobeat", "Highlife", "Bikutsi", "Traditional African"],
+            "experience_level": "Professionnel",
+            "region": "Afrique",
+            "city": "Accra",
+            "looking_for": ["Collaboration", "Performance", "Jam Session"],
+            "social_links": {
+                "instagram": "@kofi_asante_music",
+                "youtube": "KofiAsanteOfficial"
+            }
+        }
+        
+        success, response = self.run_test(
+            "Create Musician Profile", 
+            "POST", 
+            "community/profile", 
+            200, 
+            data=profile_data, 
+            auth_required=True
+        )
+        
+        if success and 'id' in response:
+            self.musician_profile_id = response['id']
+            print(f"   Created musician profile ID: {self.musician_profile_id}")
+            print(f"   Stage name: {response.get('stage_name', 'N/A')}")
+            print(f"   Instruments: {response.get('instruments', [])}")
+            print(f"   Genres: {response.get('genres', [])}")
+        
+        return success
+
+    def test_get_my_musician_profile(self):
+        """Test getting current user's musician profile"""
+        if not self.auth_token:
+            print("❌ No auth token available for get profile test")
+            return False
+            
+        success, response = self.run_test(
+            "Get My Musician Profile", 
+            "GET", 
+            "community/profile/me", 
+            200, 
+            auth_required=True
+        )
+        
+        if success:
+            print(f"   Profile retrieved: {response.get('stage_name', 'N/A')}")
+            print(f"   Region: {response.get('region', 'N/A')}")
+            print(f"   Experience: {response.get('experience_level', 'N/A')}")
+        
+        return success
+
+    def test_search_musicians_no_filters(self):
+        """Test searching musicians without filters"""
+        success, response = self.run_test(
+            "Search Musicians (No Filters)", 
+            "GET", 
+            "community/musicians", 
+            200
+        )
+        
+        if success and isinstance(response, list):
+            print(f"   Found {len(response)} musicians")
+            for musician in response[:3]:  # Show first 3
+                print(f"   - {musician.get('stage_name', 'N/A')} ({musician.get('region', 'N/A')})")
+        
+        return success
+
+    def test_search_musicians_with_filters(self):
+        """Test searching musicians with various filters"""
+        filters_to_test = [
+            {"region": "Afrique"},
+            {"genre": "Afrobeat"},
+            {"instrument": "Balafon"},
+            {"experience_level": "Professionnel"},
+            {"looking_for": "Collaboration"}
+        ]
+        
+        results = []
+        for filter_params in filters_to_test:
+            filter_name = list(filter_params.keys())[0]
+            filter_value = list(filter_params.values())[0]
+            
+            success, response = self.run_test(
+                f"Search Musicians by {filter_name}={filter_value}", 
+                "GET", 
+                "community/musicians", 
+                200, 
+                params=filter_params
+            )
+            
+            if success and isinstance(response, list):
+                print(f"   Found {len(response)} musicians with {filter_name}={filter_value}")
+            
+            results.append(success)
+        
+        return all(results)
+
+    def test_create_community_post(self):
+        """Test creating a community post with African music themes"""
+        if not self.auth_token:
+            print("❌ No auth token available for create post test")
+            return False
+            
+        post_data = {
+            "title": "Recherche collaborateurs pour projet Afrobeat-Bikutsi",
+            "content": "Salut la communauté ! Je travaille sur un projet fusion mêlant Afrobeat nigérian et Bikutsi camerounais. Je cherche un joueur de balafon et un bassiste pour enregistrer quelques morceaux. Le projet explore les rythmes traditionnels avec des arrangements modernes. Qui serait intéressé ?",
+            "post_type": "collaboration",
+            "tags": ["Afrobeat", "Bikutsi", "Collaboration", "Balafon", "Fusion", "Enregistrement"]
+        }
+        
+        success, response = self.run_test(
+            "Create Community Post", 
+            "POST", 
+            "community/posts", 
+            200, 
+            data=post_data, 
+            auth_required=True
+        )
+        
+        if success and 'id' in response:
+            self.created_post_id = response['id']
+            print(f"   Created post ID: {self.created_post_id}")
+            print(f"   Post title: {response.get('title', 'N/A')}")
+            print(f"   Post type: {response.get('post_type', 'N/A')}")
+            print(f"   Tags: {response.get('tags', [])}")
+        
+        return success
+
+    def test_get_community_feed(self):
+        """Test getting community feed posts"""
+        success, response = self.run_test(
+            "Get Community Feed", 
+            "GET", 
+            "community/posts", 
+            200
+        )
+        
+        if success and isinstance(response, list):
+            print(f"   Found {len(response)} posts in feed")
+            for post in response[:3]:  # Show first 3
+                print(f"   - {post.get('title', 'N/A')} ({post.get('post_type', 'N/A')})")
+                author = post.get('author', {})
+                print(f"     by {author.get('username', 'N/A')} / {author.get('stage_name', 'N/A')}")
+        
+        return success
+
+    def test_get_community_feed_with_filters(self):
+        """Test getting community feed with filters"""
+        filters_to_test = [
+            {"post_type": "collaboration"},
+            {"tag": "Afrobeat"}
+        ]
+        
+        results = []
+        for filter_params in filters_to_test:
+            filter_name = list(filter_params.keys())[0]
+            filter_value = list(filter_params.values())[0]
+            
+            success, response = self.run_test(
+                f"Get Community Feed by {filter_name}={filter_value}", 
+                "GET", 
+                "community/posts", 
+                200, 
+                params=filter_params
+            )
+            
+            if success and isinstance(response, list):
+                print(f"   Found {len(response)} posts with {filter_name}={filter_value}")
+            
+            results.append(success)
+        
+        return all(results)
+
+    def test_like_community_post(self):
+        """Test liking a community post"""
+        if not self.auth_token:
+            print("❌ No auth token available for like post test")
+            return False
+            
+        if not self.created_post_id:
+            print("❌ No post ID available for like test")
+            return False
+            
+        success, response = self.run_test(
+            "Like Community Post", 
+            "POST", 
+            f"community/posts/{self.created_post_id}/like", 
+            200, 
+            auth_required=True
+        )
+        
+        if success:
+            print(f"   Like action: {response.get('message', 'N/A')}")
+            print(f"   Liked status: {response.get('liked', 'N/A')}")
+        
+        return success
+
+    def test_unlike_community_post(self):
+        """Test unliking a community post (toggle like)"""
+        if not self.auth_token:
+            print("❌ No auth token available for unlike post test")
+            return False
+            
+        if not self.created_post_id:
+            print("❌ No post ID available for unlike test")
+            return False
+            
+        success, response = self.run_test(
+            "Unlike Community Post", 
+            "POST", 
+            f"community/posts/{self.created_post_id}/like", 
+            200, 
+            auth_required=True
+        )
+        
+        if success:
+            print(f"   Unlike action: {response.get('message', 'N/A')}")
+            print(f"   Liked status: {response.get('liked', 'N/A')}")
+        
+        return success
+
+    def test_add_comment_to_post(self):
+        """Test adding a comment to a community post"""
+        if not self.auth_token:
+            print("❌ No auth token available for add comment test")
+            return False
+            
+        if not self.created_post_id:
+            print("❌ No post ID available for comment test")
+            return False
+            
+        comment_data = {
+            "content": "Super projet ! Je joue du balafon depuis 15 ans et je serais très intéressé par cette collaboration Afrobeat-Bikutsi. J'ai déjà travaillé sur des fusions similaires. Contacte-moi si tu veux écouter quelques samples de mon travail !"
+        }
+        
+        success, response = self.run_test(
+            "Add Comment to Post", 
+            "POST", 
+            f"community/posts/{self.created_post_id}/comments", 
+            200, 
+            data=comment_data, 
+            auth_required=True
+        )
+        
+        if success:
+            print(f"   Comment ID: {response.get('id', 'N/A')}")
+            print(f"   Comment content: {response.get('content', 'N/A')[:50]}...")
+        
+        return success
+
+    def test_get_post_comments(self):
+        """Test getting comments for a post"""
+        if not self.created_post_id:
+            print("❌ No post ID available for get comments test")
+            return False
+            
+        success, response = self.run_test(
+            "Get Post Comments", 
+            "GET", 
+            f"community/posts/{self.created_post_id}/comments", 
+            200
+        )
+        
+        if success and isinstance(response, list):
+            print(f"   Found {len(response)} comments")
+            for comment in response[:3]:  # Show first 3
+                print(f"   - {comment.get('content', 'N/A')[:50]}...")
+                author = comment.get('author', {})
+                print(f"     by {author.get('username', 'N/A')}")
+        
+        return success
+
+    def test_create_second_user_for_messaging(self):
+        """Create a second user for testing private messaging"""
+        timestamp = int(time.time())
+        user_data = {
+            "email": f"musician2_{timestamp}@example.com",
+            "username": f"musician2_{timestamp}",
+            "password": "TestPassword123!"
+        }
+        
+        success, response = self.run_test("Create Second User for Messaging", "POST", "auth/register", 200, data=user_data)
+        if success and 'access_token' in response:
+            self.second_user_token = response['access_token']
+            self.second_user_data = response['user']
+            print(f"   Second user registered: {self.second_user_data['username']}")
+            print(f"   Second user ID: {self.second_user_data['id']}")
+        return success
+
+    def test_send_private_message(self):
+        """Test sending a private message to another musician"""
+        if not self.auth_token:
+            print("❌ No auth token available for send message test")
+            return False
+            
+        if not self.second_user_data:
+            print("❌ No second user available for messaging test")
+            return False
+            
+        message_data = {
+            "recipient_id": self.second_user_data['id'],
+            "subject": "Collaboration Afrobeat - Proposition de projet",
+            "content": "Salut ! J'ai vu ton profil et je pense que ton style pourrait parfaitement s'intégrer dans mon projet de fusion Afrobeat-Bikutsi. J'aimerais discuter d'une possible collaboration. Tu es disponible pour un appel cette semaine ? J'ai quelques démos à te faire écouter."
+        }
+        
+        success, response = self.run_test(
+            "Send Private Message", 
+            "POST", 
+            "community/messages", 
+            200, 
+            data=message_data, 
+            auth_required=True
+        )
+        
+        if success:
+            self.sent_message_id = response.get('id')
+            print(f"   Message ID: {self.sent_message_id}")
+            print(f"   Subject: {response.get('subject', 'N/A')}")
+            print(f"   Recipient ID: {response.get('recipient_id', 'N/A')}")
+        
+        return success
+
+    def test_get_my_messages(self):
+        """Test getting user's private messages"""
+        if not self.auth_token:
+            print("❌ No auth token available for get messages test")
+            return False
+            
+        success, response = self.run_test(
+            "Get My Messages", 
+            "GET", 
+            "community/messages", 
+            200, 
+            auth_required=True
+        )
+        
+        if success and isinstance(response, list):
+            print(f"   Found {len(response)} messages")
+            for message in response[:3]:  # Show first 3
+                print(f"   - {message.get('subject', 'N/A')}")
+                sender = message.get('sender', {})
+                recipient = message.get('recipient', {})
+                print(f"     from {sender.get('username', 'N/A')} to {recipient.get('username', 'N/A')}")
+                print(f"     read: {message.get('is_read', False)}")
+        
+        return success
+
+    def test_get_second_user_messages(self):
+        """Test getting messages for the second user (recipient)"""
+        if not self.second_user_token:
+            print("❌ No second user token available for get messages test")
+            return False
+            
+        # Temporarily switch to second user's token
+        original_token = self.auth_token
+        self.auth_token = self.second_user_token
+        
+        success, response = self.run_test(
+            "Get Second User Messages", 
+            "GET", 
+            "community/messages", 
+            200, 
+            auth_required=True
+        )
+        
+        # Restore original token
+        self.auth_token = original_token
+        
+        if success and isinstance(response, list):
+            print(f"   Second user found {len(response)} messages")
+            for message in response[:3]:  # Show first 3
+                print(f"   - {message.get('subject', 'N/A')}")
+                sender = message.get('sender', {})
+                print(f"     from {sender.get('username', 'N/A')}")
+        
+        return success
+
+    def test_create_additional_community_posts(self):
+        """Test creating additional community posts with different types"""
+        if not self.auth_token:
+            print("❌ No auth token available for additional posts test")
+            return False
+            
+        additional_posts = [
+            {
+                "title": "Question sur les gammes pentatoniques africaines",
+                "content": "Bonjour ! Je m'intéresse aux gammes pentatoniques utilisées dans la musique traditionnelle africaine, particulièrement dans le Highlife ghanéen et le Soukous congolais. Quelqu'un pourrait-il m'expliquer les différences et me recommander des ressources pour approfondir ?",
+                "post_type": "question",
+                "tags": ["Théorie musicale", "Highlife", "Soukous", "Gammes", "Apprentissage"]
+            },
+            {
+                "title": "Showcase : Nouveau morceau Bikutsi moderne",
+                "content": "Je viens de terminer un nouveau morceau qui fusionne Bikutsi traditionnel et électronique moderne. J'ai utilisé des samples de balafon authentiques avec des synthés contemporains. Qu'est-ce que vous en pensez ? Feedback bienvenu !",
+                "post_type": "showcase",
+                "tags": ["Bikutsi", "Électronique", "Fusion", "Balafon", "Nouveau morceau"]
+            },
+            {
+                "title": "Idée : Festival de musique africaine virtuel",
+                "content": "Et si on organisait un festival de musique africaine virtuel ? Chaque musicien pourrait présenter sa région/style, on pourrait avoir des masterclasses, des jams sessions en ligne... Qui serait partant pour développer cette idée ?",
+                "post_type": "idea",
+                "tags": ["Festival", "Virtuel", "Communauté", "Masterclass", "Organisation"]
+            }
+        ]
+        
+        results = []
+        for i, post_data in enumerate(additional_posts):
+            success, response = self.run_test(
+                f"Create Additional Post {i+1} ({post_data['post_type']})", 
+                "POST", 
+                "community/posts", 
+                200, 
+                data=post_data, 
+                auth_required=True
+            )
+            
+            if success:
+                print(f"   Created {post_data['post_type']} post: {response.get('title', 'N/A')}")
+            
+            results.append(success)
+        
+        return all(results)
+
 def main():
     print("🎵 US EXPLO API Testing Suite - Upload Endpoint Testing")
     print("=" * 60)

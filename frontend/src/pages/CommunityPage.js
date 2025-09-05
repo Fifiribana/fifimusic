@@ -396,6 +396,7 @@ const CommunityPage = () => {
             {[
               { id: 'feed', label: 'Feed Communauté', icon: Radio },
               { id: 'musicians', label: 'Musiciens', icon: Users },
+              { id: 'groups', label: 'Groupes', icon: Users },
               { id: 'messages', label: 'Messages', icon: MessageCircle },
               { id: 'profile', label: 'Mon Profil', icon: UserPlus }
             ].map(tab => (

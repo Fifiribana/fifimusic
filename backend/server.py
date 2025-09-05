@@ -2102,6 +2102,392 @@ async def send_group_message(
         logger.error(f"Error sending group message: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to send group message")
 
+# ===== AI SYSTEM ENDPOINTS =====
+
+from emergentintegrations.llm.chat import LlmChat, UserMessage
+
+# Initialize AI with environment variables
+EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY', '')
+
+async def get_user_context(user_id: str) -> Dict:
+    """Get user context for AI conversations"""
+    try:
+        # Get user info
+        user = await db.users.find_one({"id": user_id})
+        if not user:
+            return {}
+        
+        # Get subscription info
+        subscription = await db.user_subscriptions.find_one({
+            "user_id": user_id,
+            "status": "active"
+        })
+        
+        # Get musician profile
+        musician_profile = await db.musician_profiles.find_one({"user_id": user_id})
+        
+        # Get recent activity (tracks liked, purchased, etc.)
+        recent_likes = await db.post_likes.find({"user_id": user_id}).limit(10).to_list(10)
+        recent_purchases = await db.payment_transactions.find({
+            "user_email": user.get("email"),
+            "payment_status": "completed"
+        }).limit(5).to_list(5)
+        
+        context = {
+            "user": {
+                "username": user.get("username"),
+                "email": user.get("email"),
+                "preferences": user.get("preferences", []),
+                "favorite_regions": user.get("favorite_regions", [])
+            },
+            "subscription": subscription,
+            "musician_profile": musician_profile,
+            "activity": {
+                "recent_likes_count": len(recent_likes),
+                "recent_purchases_count": len(recent_purchases)
+            }
+        }
+        
+        return context
+        
+    except Exception as e:
+        logger.error(f"Error getting user context: {str(e)}")
+        return {}
+
+@api_router.post("/ai/chat", response_model=ChatMessageResponse)
+async def chat_with_ai(
+    message_data: ChatMessageCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Chat with AI assistant"""
+    try:
+        # Get or create session
+        session_id = message_data.session_id
+        if not session_id:
+            # Create new session
+            session = ChatSession(
+                user_id=current_user.id,
+                title=f"Chat - {datetime.now().strftime('%d/%m %H:%M')}"
+            )
+            await db.chat_sessions.insert_one(prepare_for_mongo(session.dict()))
+            session_id = session.id
+        else:
+            # Verify session belongs to user
+            session = await db.chat_sessions.find_one({
+                "id": session_id,
+                "user_id": current_user.id
+            })
+            if not session:
+                raise HTTPException(status_code=404, detail="Session not found")
+        
+        # Get user context for personalized responses
+        user_context = await get_user_context(current_user.id)
+        
+        # Create system message with context
+        system_message = f"""Tu es l'assistant IA de US EXPLO (Universal Sound Exploration), une plateforme de musique mondiale moderne.
+
+CONTEXTE UTILISATEUR:
+- Nom d'utilisateur: {user_context.get('user', {}).get('username', 'Inconnu')}
+- Abonnement: {'Actif' if user_context.get('subscription') else 'Aucun'}
+- Profil musicien: {'Oui' if user_context.get('musician_profile') else 'Non'}
+
+TES MISSIONS:
+1. Aider avec les fonctionnalités de US EXPLO (recherche musique, abonnements, communauté, marketplace)
+2. Recommander de la musique basée sur les préférences utilisateur  
+3. Expliquer comment utiliser la plateforme
+4. Aider avec les problèmes techniques simples
+5. Promouvoir la découverte musicale mondiale
+
+STYLE DE RÉPONSE:
+- Toujours en français
+- Ton amical et professionnel
+- Émojis musicaux appropriés (🎵, 🌍, 🎶)
+- Réponses concises mais complètes
+- Encourager l'exploration musicale mondiale
+
+Si tu ne peux pas aider avec quelque chose, oriente vers le support technique."""
+
+        # Initialize LLM chat
+        chat = LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            session_id=session_id,
+            system_message=system_message
+        ).with_model("openai", "gpt-4o")
+        
+        # Save user message
+        user_message = ChatMessage(
+            session_id=session_id,
+            user_id=current_user.id,
+            message_type="user",
+            content=message_data.content
+        )
+        await db.chat_messages.insert_one(prepare_for_mongo(user_message.dict()))
+        
+        # Send message to AI
+        user_msg = UserMessage(text=message_data.content)
+        ai_response = await chat.send_message(user_msg)
+        
+        # Save AI response
+        ai_message = ChatMessage(
+            session_id=session_id,
+            user_id=current_user.id,
+            message_type="assistant",
+            content=ai_response,
+            metadata={"model": "gpt-4o"}
+        )
+        await db.chat_messages.insert_one(prepare_for_mongo(ai_message.dict()))
+        
+        # Update session
+        await db.chat_sessions.update_one(
+            {"id": session_id},
+            {"$set": {"updated_at": datetime.now(timezone.utc)}}
+        )
+        
+        return ChatMessageResponse(
+            message_id=ai_message.id,
+            session_id=session_id,
+            content=ai_response,
+            message_type="assistant",
+            created_at=ai_message.created_at
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in AI chat: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to process AI chat")
+
+@api_router.get("/ai/sessions")
+async def get_chat_sessions(
+    current_user: User = Depends(get_current_user),
+    limit: int = Query(20, le=100)
+):
+    """Get user's chat sessions"""
+    try:
+        sessions = await db.chat_sessions.find({
+            "user_id": current_user.id,
+            "is_active": True
+        }).sort("updated_at", -1).limit(limit).to_list(limit)
+        
+        return [prepare_from_mongo(session) for session in sessions]
+        
+    except Exception as e:
+        logger.error(f"Error getting chat sessions: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get chat sessions")
+
+@api_router.get("/ai/sessions/{session_id}/messages")
+async def get_chat_messages(
+    session_id: str,
+    current_user: User = Depends(get_current_user),
+    limit: int = Query(50, le=100)
+):
+    """Get messages from a chat session"""
+    try:
+        # Verify session belongs to user
+        session = await db.chat_sessions.find_one({
+            "id": session_id,
+            "user_id": current_user.id
+        })
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
+        
+        messages = await db.chat_messages.find({
+            "session_id": session_id
+        }).sort("created_at", 1).limit(limit).to_list(limit)
+        
+        return [prepare_from_mongo(message) for message in messages]
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting chat messages: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get chat messages")
+
+@api_router.delete("/ai/sessions/{session_id}")
+async def delete_chat_session(
+    session_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Delete a chat session"""
+    try:
+        # Verify session belongs to user
+        session = await db.chat_sessions.find_one({
+            "id": session_id,
+            "user_id": current_user.id
+        })
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
+        
+        # Soft delete session
+        await db.chat_sessions.update_one(
+            {"id": session_id},
+            {"$set": {"is_active": False}}
+        )
+        
+        return {"message": "Session deleted successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting chat session: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to delete session")
+
+# ===== AI AUTOMATION ENDPOINTS =====
+
+@api_router.post("/ai/automation/tasks", response_model=AutomationTask)
+async def create_automation_task(
+    task_data: AutomationTaskCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Create an AI automation task"""
+    try:
+        task = AutomationTask(
+            user_id=current_user.id,
+            **task_data.dict()
+        )
+        
+        await db.automation_tasks.insert_one(prepare_for_mongo(task.dict()))
+        return task
+        
+    except Exception as e:
+        logger.error(f"Error creating automation task: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to create automation task")
+
+@api_router.get("/ai/automation/tasks")
+async def get_automation_tasks(
+    current_user: User = Depends(get_current_user)
+):
+    """Get user's automation tasks"""
+    try:
+        tasks = await db.automation_tasks.find({
+            "user_id": current_user.id
+        }).sort("created_at", -1).to_list(100)
+        
+        return [prepare_from_mongo(task) for task in tasks]
+        
+    except Exception as e:
+        logger.error(f"Error getting automation tasks: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get automation tasks")
+
+@api_router.put("/ai/automation/tasks/{task_id}/toggle")
+async def toggle_automation_task(
+    task_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Toggle automation task active status"""
+    try:
+        task = await db.automation_tasks.find_one({
+            "id": task_id,
+            "user_id": current_user.id
+        })
+        if not task:
+            raise HTTPException(status_code=404, detail="Task not found")
+        
+        new_status = not task["is_active"]
+        await db.automation_tasks.update_one(
+            {"id": task_id},
+            {"$set": {"is_active": new_status, "updated_at": datetime.now(timezone.utc)}}
+        )
+        
+        return {"message": f"Task {'activated' if new_status else 'deactivated'} successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error toggling automation task: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to toggle task")
+
+@api_router.post("/ai/recommendations/generate")
+async def generate_ai_recommendations(
+    current_user: User = Depends(get_current_user)
+):
+    """Generate AI recommendations for user"""
+    try:
+        # Get user context
+        user_context = await get_user_context(current_user.id)
+        
+        # Get user's listening history/preferences
+        user_preferences = user_context.get('user', {}).get('preferences', [])
+        favorite_regions = user_context.get('user', {}).get('favorite_regions', [])
+        
+        # Get some tracks for recommendations
+        query = {}
+        if favorite_regions:
+            query["region"] = {"$in": favorite_regions}
+        
+        tracks = await db.tracks.find(query).limit(10).to_list(10)
+        
+        if not tracks:
+            tracks = await db.tracks.find({}).limit(10).to_list(10)
+        
+        # Generate AI recommendations using LLM
+        system_message = """Tu es un expert en recommandation musicale mondiale. 
+        Analyse les préférences utilisateur et recommande des pistes musicales pertinentes avec des explications courtes et engageantes."""
+        
+        chat = LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            session_id=f"recommendations_{current_user.id}",
+            system_message=system_message
+        ).with_model("openai", "gpt-4o")
+        
+        prompt = f"""Utilisateur: {user_context.get('user', {}).get('username')}
+        Préférences: {', '.join(user_preferences) if user_preferences else 'Aucune spécifiée'}
+        Régions favorites: {', '.join(favorite_regions) if favorite_regions else 'Toutes'}
+        
+        Parmi ces pistes disponibles, recommande les 3 meilleures avec une raison courte pour chacune:
+        {[{'titre': t['title'], 'artiste': t['artist'], 'style': t['style'], 'région': t['region']} for t in tracks[:5]]}
+        
+        Format: Pour chaque recommandation, donne juste le titre et une phrase d'explication engageante."""
+        
+        user_msg = UserMessage(text=prompt)
+        ai_response = await chat.send_message(user_msg)
+        
+        # Create recommendations (simplified for MVP)
+        recommendations = []
+        for i, track in enumerate(tracks[:3]):
+            recommendation = AIRecommendation(
+                user_id=current_user.id,
+                recommendation_type="track",
+                content={
+                    "track_id": track["id"],
+                    "title": track["title"],
+                    "artist": track["artist"],
+                    "style": track["style"],
+                    "region": track["region"]
+                },
+                reason=f"Recommandé pour votre goût musical - {track['style']} de {track['region']}",
+                confidence_score=0.8 + (i * 0.1)
+            )
+            await db.ai_recommendations.insert_one(prepare_for_mongo(recommendation.dict()))
+            recommendations.append(recommendation)
+        
+        return {
+            "message": "Recommendations generated successfully",
+            "ai_analysis": ai_response,
+            "recommendations": [prepare_from_mongo(r.dict()) for r in recommendations]
+        }
+        
+    except Exception as e:
+        logger.error(f"Error generating AI recommendations: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to generate recommendations")
+
+@api_router.get("/ai/recommendations")
+async def get_ai_recommendations(
+    current_user: User = Depends(get_current_user),
+    limit: int = Query(20, le=100)
+):
+    """Get user's AI recommendations"""
+    try:
+        recommendations = await db.ai_recommendations.find({
+            "user_id": current_user.id
+        }).sort("created_at", -1).limit(limit).to_list(limit)
+        
+        return [prepare_from_mongo(rec) for rec in recommendations]
+        
+    except Exception as e:
+        logger.error(f"Error getting AI recommendations: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get recommendations")
+
 # Include the router in the main app
 app.include_router(api_router)
 

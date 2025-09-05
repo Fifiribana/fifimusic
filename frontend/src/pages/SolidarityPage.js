@@ -108,7 +108,7 @@ const SolidarityPage = ({ user, authToken }) => {
   };
 
   const adviceCategories = {
-    physical: { icon: Hands, label: "Physique", color: "green" },
+    physical: { icon: Heart, label: "Physique", color: "green" },
     spiritual: { icon: Lightbulb, label: "Spirituel", color: "purple" },
     creative: { icon: Sparkles, label: "Créatif", color: "blue" },
     technical: { icon: Target, label: "Technique", color: "orange" },

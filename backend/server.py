@@ -3250,6 +3250,12 @@ async def get_solidarity_stats():
 # Include the router in the main app
 app.include_router(api_router)
 
+# Mount frontend build files AFTER API routes
+FRONTEND_BUILD_DIR = Path(__file__).parent.parent / "frontend" / "build"
+if FRONTEND_BUILD_DIR.exists():
+    app.mount("/static", StaticFiles(directory=str(FRONTEND_BUILD_DIR / "static")), name="static")
+    app.mount("/", StaticFiles(directory=str(FRONTEND_BUILD_DIR), html=True), name="frontend")
+
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,

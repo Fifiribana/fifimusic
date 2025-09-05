@@ -1099,6 +1099,449 @@ class USExploAPITester:
         
         return all(results)
 
+    # ===== NEW FEATURES TESTS - SUBSCRIPTION SYSTEM =====
+
+    def test_get_subscription_plans(self):
+        """Test getting all subscription plans"""
+        success, response = self.run_test(
+            "Get Subscription Plans", 
+            "GET", 
+            "subscriptions/plans", 
+            200
+        )
+        
+        if success and isinstance(response, list):
+            print(f"   Found {len(response)} subscription plans")
+            for plan in response:
+                print(f"   - {plan.get('name', 'N/A')}: €{plan.get('price_monthly', 0)}/mois")
+                print(f"     Features: {plan.get('features', [])}")
+                print(f"     Can sell music: {plan.get('can_sell_music', False)}")
+                if plan.get('name') == 'Pro':  # Store Pro plan ID for subscription test
+                    self.subscription_plan_id = plan.get('id')
+                    print(f"     Stored Pro plan ID: {self.subscription_plan_id}")
+        
+        return success
+
+    def test_create_subscription(self):
+        """Test subscribing to a plan"""
+        if not self.auth_token:
+            print("❌ No auth token available for subscription test")
+            return False
+            
+        if not self.subscription_plan_id:
+            print("❌ No subscription plan ID available")
+            return False
+            
+        subscription_data = {
+            "plan_id": self.subscription_plan_id,
+            "billing_cycle": "monthly"
+        }
+        
+        success, response = self.run_test(
+            "Create Subscription (Pro Plan)", 
+            "POST", 
+            "subscriptions/subscribe", 
+            200, 
+            data=subscription_data,
+            auth_required=True
+        )
+        
+        if success:
+            self.user_subscription_id = response.get('id')
+            print(f"   Subscription ID: {self.user_subscription_id}")
+            print(f"   Plan ID: {response.get('plan_id', 'N/A')}")
+            print(f"   Billing cycle: {response.get('billing_cycle', 'N/A')}")
+            print(f"   Status: {response.get('status', 'N/A')}")
+        
+        return success
+
+    def test_get_user_subscription(self):
+        """Test getting current user's subscription"""
+        if not self.auth_token:
+            print("❌ No auth token available for get subscription test")
+            return False
+            
+        success, response = self.run_test(
+            "Get My Subscription", 
+            "GET", 
+            "subscriptions/my-subscription", 
+            200, 
+            auth_required=True
+        )
+        
+        if success and response:
+            plan = response.get('plan', {})
+            print(f"   Subscription status: {response.get('status', 'N/A')}")
+            print(f"   Plan name: {plan.get('name', 'N/A')}")
+            print(f"   Billing cycle: {response.get('billing_cycle', 'N/A')}")
+            print(f"   Can sell music: {plan.get('can_sell_music', False)}")
+        elif success and not response:
+            print("   No active subscription found")
+        
+        return success
+
+    # ===== NEW FEATURES TESTS - MUSIC MARKETPLACE =====
+
+    def test_create_music_listing(self):
+        """Test listing music for sale in marketplace"""
+        if not self.auth_token:
+            print("❌ No auth token available for marketplace listing test")
+            return False
+            
+        if not self.created_track_id:
+            print("❌ No track ID available for marketplace listing")
+            return False
+            
+        listing_data = {
+            "track_id": self.created_track_id,
+            "listing_type": "sale",
+            "sale_price": 15.99,
+            "license_price": 25.99,
+            "license_terms": "commercial",
+            "royalty_percentage": 5.0,
+            "is_exclusive": False
+        }
+        
+        success, response = self.run_test(
+            "Create Music Listing", 
+            "POST", 
+            "marketplace/list", 
+            200, 
+            data=listing_data,
+            auth_required=True
+        )
+        
+        if success:
+            self.music_listing_id = response.get('id')
+            print(f"   Listing ID: {self.music_listing_id}")
+            print(f"   Track ID: {response.get('track_id', 'N/A')}")
+            print(f"   Sale price: €{response.get('sale_price', 0)}")
+            print(f"   License price: €{response.get('license_price', 0)}")
+            print(f"   Status: {response.get('status', 'N/A')}")
+        
+        return success
+
+    def test_get_marketplace_listings(self):
+        """Test browsing marketplace listings"""
+        success, response = self.run_test(
+            "Get Marketplace Listings", 
+            "GET", 
+            "marketplace/listings", 
+            200
+        )
+        
+        if success and isinstance(response, list):
+            print(f"   Found {len(response)} marketplace listings")
+            for listing in response[:3]:  # Show first 3
+                track = listing.get('track', {})
+                seller = listing.get('seller', {})
+                print(f"   - {track.get('title', 'N/A')} by {seller.get('username', 'N/A')}")
+                print(f"     Type: {listing.get('listing_type', 'N/A')}")
+                print(f"     Sale price: €{listing.get('sale_price', 0)}")
+        
+        return success
+
+    def test_get_marketplace_listings_with_filters(self):
+        """Test marketplace listings with filters"""
+        filters_to_test = [
+            {"genre": "Bikutsi"},
+            {"listing_type": "sale"},
+            {"price_min": 10.0, "price_max": 50.0}
+        ]
+        
+        results = []
+        for filter_params in filters_to_test:
+            filter_desc = ", ".join([f"{k}={v}" for k, v in filter_params.items()])
+            
+            success, response = self.run_test(
+                f"Get Marketplace Listings with filters ({filter_desc})", 
+                "GET", 
+                "marketplace/listings", 
+                200, 
+                params=filter_params
+            )
+            
+            if success and isinstance(response, list):
+                print(f"   Found {len(response)} listings with filters: {filter_desc}")
+            
+            results.append(success)
+        
+        return all(results)
+
+    def test_get_my_marketplace_listings(self):
+        """Test getting current user's marketplace listings"""
+        if not self.auth_token:
+            print("❌ No auth token available for my listings test")
+            return False
+            
+        success, response = self.run_test(
+            "Get My Marketplace Listings", 
+            "GET", 
+            "marketplace/my-listings", 
+            200, 
+            auth_required=True
+        )
+        
+        if success and isinstance(response, list):
+            print(f"   Found {len(response)} of my listings")
+            for listing in response:
+                track = listing.get('track', {})
+                print(f"   - {track.get('title', 'N/A')}")
+                print(f"     Status: {listing.get('status', 'N/A')}")
+                print(f"     Sale price: €{listing.get('sale_price', 0)}")
+        
+        return success
+
+    # ===== NEW FEATURES TESTS - COMMUNITY GROUPS =====
+
+    def test_create_community_group(self):
+        """Test creating a community group"""
+        if not self.auth_token:
+            print("❌ No auth token available for create group test")
+            return False
+            
+        group_data = {
+            "name": "Musiciens Bikutsi",
+            "description": "Groupe dédié aux musiciens passionnés de Bikutsi camerounais. Partageons nos techniques, nos compositions et organisons des collaborations !",
+            "group_type": "public",
+            "max_members": 100,
+            "tags": ["Bikutsi", "Cameroun", "Collaboration", "Traditionnel", "Moderne"]
+        }
+        
+        success, response = self.run_test(
+            "Create Community Group", 
+            "POST", 
+            "community/groups", 
+            200, 
+            data=group_data,
+            auth_required=True
+        )
+        
+        if success:
+            self.community_group_id = response.get('id')
+            print(f"   Group ID: {self.community_group_id}")
+            print(f"   Group name: {response.get('name', 'N/A')}")
+            print(f"   Group type: {response.get('group_type', 'N/A')}")
+            print(f"   Max members: {response.get('max_members', 0)}")
+            print(f"   Tags: {response.get('tags', [])}")
+        
+        return success
+
+    def test_get_community_groups(self):
+        """Test getting community groups"""
+        success, response = self.run_test(
+            "Get Community Groups", 
+            "GET", 
+            "community/groups", 
+            200
+        )
+        
+        if success and isinstance(response, list):
+            print(f"   Found {len(response)} community groups")
+            for group in response[:3]:  # Show first 3
+                print(f"   - {group.get('name', 'N/A')} ({group.get('group_type', 'N/A')})")
+                print(f"     Members: {group.get('member_count', 0)}/{group.get('max_members', 0)}")
+                print(f"     Tags: {group.get('tags', [])}")
+        
+        return success
+
+    def test_get_community_groups_with_filters(self):
+        """Test getting community groups with filters"""
+        filters_to_test = [
+            {"group_type": "public"},
+            {"tag": "Bikutsi"}
+        ]
+        
+        results = []
+        for filter_params in filters_to_test:
+            filter_desc = ", ".join([f"{k}={v}" for k, v in filter_params.items()])
+            
+            success, response = self.run_test(
+                f"Get Community Groups with filters ({filter_desc})", 
+                "GET", 
+                "community/groups", 
+                200, 
+                params=filter_params
+            )
+            
+            if success and isinstance(response, list):
+                print(f"   Found {len(response)} groups with filters: {filter_desc}")
+            
+            results.append(success)
+        
+        return all(results)
+
+    def test_join_community_group(self):
+        """Test joining a community group with second user"""
+        if not self.second_user_token:
+            print("❌ No second user token available for join group test")
+            return False
+            
+        if not self.community_group_id:
+            print("❌ No community group ID available for join test")
+            return False
+            
+        # Switch to second user's token
+        original_token = self.auth_token
+        self.auth_token = self.second_user_token
+        
+        success, response = self.run_test(
+            "Join Community Group (Second User)", 
+            "POST", 
+            f"community/groups/{self.community_group_id}/join", 
+            200, 
+            auth_required=True
+        )
+        
+        # Restore original token
+        self.auth_token = original_token
+        
+        if success:
+            print(f"   Join status: {response.get('message', 'N/A')}")
+            print(f"   Member role: {response.get('role', 'N/A')}")
+        
+        return success
+
+    def test_send_group_message(self):
+        """Test sending a message to the community group"""
+        if not self.auth_token:
+            print("❌ No auth token available for group message test")
+            return False
+            
+        if not self.community_group_id:
+            print("❌ No community group ID available for message test")
+            return False
+            
+        message_data = {
+            "content": "Salut tout le monde ! Je suis ravi de rejoindre ce groupe de passionnés de Bikutsi. Je joue du balafon depuis 10 ans et j'aimerais partager quelques techniques traditionnelles que j'ai apprises au Cameroun. Qui serait intéressé par un atelier virtuel ?",
+            "message_type": "text"
+        }
+        
+        success, response = self.run_test(
+            "Send Group Message", 
+            "POST", 
+            f"community/groups/{self.community_group_id}/messages", 
+            200, 
+            data=message_data,
+            auth_required=True
+        )
+        
+        if success:
+            self.group_message_id = response.get('id')
+            print(f"   Message ID: {self.group_message_id}")
+            print(f"   Content: {response.get('content', 'N/A')[:50]}...")
+            print(f"   Message type: {response.get('message_type', 'N/A')}")
+        
+        return success
+
+    def test_get_group_messages(self):
+        """Test getting messages from the community group"""
+        if not self.community_group_id:
+            print("❌ No community group ID available for get messages test")
+            return False
+            
+        success, response = self.run_test(
+            "Get Group Messages", 
+            "GET", 
+            f"community/groups/{self.community_group_id}/messages", 
+            200
+        )
+        
+        if success and isinstance(response, list):
+            print(f"   Found {len(response)} group messages")
+            for message in response[:3]:  # Show first 3
+                sender = message.get('sender', {})
+                print(f"   - {message.get('content', 'N/A')[:50]}...")
+                print(f"     by {sender.get('username', 'N/A')} / {sender.get('stage_name', 'N/A')}")
+                print(f"     type: {message.get('message_type', 'N/A')}")
+        
+        return success
+
+    def test_second_user_send_group_message(self):
+        """Test second user sending a message to the group"""
+        if not self.second_user_token:
+            print("❌ No second user token available for group message test")
+            return False
+            
+        if not self.community_group_id:
+            print("❌ No community group ID available for message test")
+            return False
+            
+        # Switch to second user's token
+        original_token = self.auth_token
+        self.auth_token = self.second_user_token
+        
+        message_data = {
+            "content": "Excellente idée pour l'atelier ! Je suis bassiste et j'aimerais apprendre comment adapter les lignes de basse traditionnelles du Bikutsi avec des instruments modernes. Ça pourrait être très enrichissant pour tous !",
+            "message_type": "text"
+        }
+        
+        success, response = self.run_test(
+            "Second User Send Group Message", 
+            "POST", 
+            f"community/groups/{self.community_group_id}/messages", 
+            200, 
+            data=message_data,
+            auth_required=True
+        )
+        
+        # Restore original token
+        self.auth_token = original_token
+        
+        if success:
+            print(f"   Second user message ID: {response.get('id')}")
+            print(f"   Content: {response.get('content', 'N/A')[:50]}...")
+        
+        return success
+
+    def test_subscription_restrictions(self):
+        """Test that subscription restrictions work correctly"""
+        if not self.auth_token:
+            print("❌ No auth token available for subscription restrictions test")
+            return False
+            
+        # Test creating a listing without subscription (should fail)
+        # First, let's create a user without subscription
+        timestamp = int(time.time())
+        user_data = {
+            "email": f"no_sub_user_{timestamp}@example.com",
+            "username": f"no_sub_user_{timestamp}",
+            "password": "TestPassword123!"
+        }
+        
+        success, response = self.run_test("Create User Without Subscription", "POST", "auth/register", 200, data=user_data)
+        if not success:
+            return False
+            
+        no_sub_token = response.get('access_token')
+        
+        # Try to create a listing without subscription
+        original_token = self.auth_token
+        self.auth_token = no_sub_token
+        
+        listing_data = {
+            "track_id": self.created_track_id,
+            "listing_type": "sale",
+            "sale_price": 10.99
+        }
+        
+        success, response = self.run_test(
+            "Create Listing Without Subscription (Should Fail)", 
+            "POST", 
+            "marketplace/list", 
+            403,  # Should fail with 403 Forbidden
+            data=listing_data,
+            auth_required=True
+        )
+        
+        # Restore original token
+        self.auth_token = original_token
+        
+        if success:
+            print("   ✅ Subscription restriction working correctly - listing creation blocked")
+        
+        return success
+
 def main():
     print("🎵 US EXPLO API Testing Suite - Community Endpoints Testing")
     print("=" * 60)

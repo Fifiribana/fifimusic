@@ -897,6 +897,408 @@ async def delete_my_track(track_id: str, current_user: User = Depends(get_curren
     await db.tracks.delete_one({"id": track_id})
     return {"message": "Track deleted successfully"}
 
+# ===== MUSICIAN COMMUNITY ENDPOINTS =====
+
+@api_router.post("/community/profile", response_model=MusicianProfile)
+async def create_musician_profile(
+    profile_data: MusicianProfileCreate, 
+    current_user: User = Depends(get_current_user)
+):
+    """Create or update musician profile"""
+    try:
+        # Check if profile already exists
+        existing_profile = await db.musician_profiles.find_one({"user_id": current_user.id})
+        
+        if existing_profile:
+            # Update existing profile
+            profile_dict = profile_data.dict()
+            profile_dict["updated_at"] = datetime.now(timezone.utc)
+            
+            await db.musician_profiles.update_one(
+                {"user_id": current_user.id},
+                {"$set": profile_dict}
+            )
+            
+            updated_profile = await db.musician_profiles.find_one({"user_id": current_user.id})
+            return MusicianProfile(**prepare_from_mongo(updated_profile))
+        else:
+            # Create new profile
+            profile = MusicianProfile(
+                user_id=current_user.id,
+                **profile_data.dict()
+            )
+            
+            await db.musician_profiles.insert_one(prepare_for_mongo(profile.dict()))
+            return profile
+            
+    except Exception as e:
+        logger.error(f"Error creating musician profile: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to create musician profile")
+
+@api_router.get("/community/profile/me", response_model=MusicianProfile)
+async def get_my_profile(current_user: User = Depends(get_current_user)):
+    """Get current user's musician profile"""
+    profile = await db.musician_profiles.find_one({"user_id": current_user.id})
+    if not profile:
+        raise HTTPException(status_code=404, detail="Musician profile not found")
+    return MusicianProfile(**prepare_from_mongo(profile))
+
+@api_router.get("/community/musicians")
+async def search_musicians(
+    region: Optional[str] = None,
+    genre: Optional[str] = None,
+    instrument: Optional[str] = None,
+    experience_level: Optional[str] = None,
+    looking_for: Optional[str] = None,
+    limit: int = Query(20, le=100),
+    skip: int = Query(0, ge=0)
+):
+    """Search musicians by criteria"""
+    try:
+        pipeline = []
+        
+        # Build match stage
+        match_conditions = {"is_active": True}
+        
+        if region:
+            match_conditions["region"] = {"$regex": region, "$options": "i"}
+        if genre:
+            match_conditions["genres"] = {"$in": [genre]}
+        if instrument:
+            match_conditions["instruments"] = {"$in": [instrument]}
+        if experience_level:
+            match_conditions["experience_level"] = experience_level
+        if looking_for:
+            match_conditions["looking_for"] = {"$in": [looking_for]}
+            
+        pipeline.append({"$match": match_conditions})
+        
+        # Add user info
+        pipeline.extend([
+            {
+                "$lookup": {
+                    "from": "users",
+                    "localField": "user_id",
+                    "foreignField": "id",
+                    "as": "user_info"
+                }
+            },
+            {"$unwind": "$user_info"},
+            {
+                "$project": {
+                    "id": 1,
+                    "stage_name": 1,
+                    "bio": 1,
+                    "instruments": 1,
+                    "genres": 1,
+                    "experience_level": 1,
+                    "region": 1,
+                    "city": 1,
+                    "looking_for": 1,
+                    "profile_image": 1,
+                    "created_at": 1,
+                    "username": "$user_info.username"
+                }
+            },
+            {"$sort": {"created_at": -1}},
+            {"$skip": skip},
+            {"$limit": limit}
+        ])
+        
+        musicians = await db.musician_profiles.aggregate(pipeline).to_list(limit)
+        return [prepare_from_mongo(musician) for musician in musicians]
+        
+    except Exception as e:
+        logger.error(f"Error searching musicians: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to search musicians")
+
+@api_router.post("/community/posts", response_model=CommunityPost)
+async def create_post(
+    post_data: PostCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Create a new community post"""
+    try:
+        post = CommunityPost(
+            user_id=current_user.id,
+            **post_data.dict()
+        )
+        
+        await db.community_posts.insert_one(prepare_for_mongo(post.dict()))
+        return post
+        
+    except Exception as e:
+        logger.error(f"Error creating post: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to create post")
+
+@api_router.get("/community/posts")
+async def get_community_feed(
+    post_type: Optional[str] = None,
+    tag: Optional[str] = None,
+    limit: int = Query(20, le=100),
+    skip: int = Query(0, ge=0)
+):
+    """Get community feed posts"""
+    try:
+        pipeline = []
+        
+        # Build match stage
+        match_conditions = {"is_active": True}
+        
+        if post_type:
+            match_conditions["post_type"] = post_type
+        if tag:
+            match_conditions["tags"] = {"$in": [tag]}
+            
+        pipeline.append({"$match": match_conditions})
+        
+        # Add user info
+        pipeline.extend([
+            {
+                "$lookup": {
+                    "from": "users",
+                    "localField": "user_id",
+                    "foreignField": "id",
+                    "as": "user_info"
+                }
+            },
+            {"$unwind": "$user_info"},
+            {
+                "$lookup": {
+                    "from": "musician_profiles",
+                    "localField": "user_id",
+                    "foreignField": "user_id",
+                    "as": "musician_info"
+                }
+            },
+            {
+                "$project": {
+                    "id": 1,
+                    "title": 1,
+                    "content": 1,
+                    "post_type": 1,
+                    "tags": 1,
+                    "media_urls": 1,
+                    "likes_count": 1,
+                    "comments_count": 1,
+                    "created_at": 1,
+                    "author": {
+                        "username": "$user_info.username",
+                        "stage_name": {"$arrayElemAt": ["$musician_info.stage_name", 0]},
+                        "profile_image": {"$arrayElemAt": ["$musician_info.profile_image", 0]}
+                    }
+                }
+            },
+            {"$sort": {"created_at": -1}},
+            {"$skip": skip},
+            {"$limit": limit}
+        ])
+        
+        posts = await db.community_posts.aggregate(pipeline).to_list(limit)
+        return [prepare_from_mongo(post) for post in posts]
+        
+    except Exception as e:
+        logger.error(f"Error getting community feed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get community feed")
+
+@api_router.post("/community/posts/{post_id}/like")
+async def like_post(
+    post_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Like or unlike a post"""
+    try:
+        # Check if already liked
+        existing_like = await db.post_likes.find_one({
+            "post_id": post_id,
+            "user_id": current_user.id
+        })
+        
+        if existing_like:
+            # Unlike
+            await db.post_likes.delete_one({"id": existing_like["id"]})
+            await db.community_posts.update_one(
+                {"id": post_id},
+                {"$inc": {"likes_count": -1}}
+            )
+            return {"message": "Post unliked", "liked": False}
+        else:
+            # Like
+            like = PostLike(
+                post_id=post_id,
+                user_id=current_user.id
+            )
+            await db.post_likes.insert_one(prepare_for_mongo(like.dict()))
+            await db.community_posts.update_one(
+                {"id": post_id},
+                {"$inc": {"likes_count": 1}}
+            )
+            return {"message": "Post liked", "liked": True}
+            
+    except Exception as e:
+        logger.error(f"Error liking post: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to like post")
+
+@api_router.post("/community/posts/{post_id}/comments", response_model=PostComment)
+async def add_comment(
+    post_id: str,
+    comment_data: CommentCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Add comment to a post"""
+    try:
+        comment = PostComment(
+            post_id=post_id,
+            user_id=current_user.id,
+            **comment_data.dict()
+        )
+        
+        await db.post_comments.insert_one(prepare_for_mongo(comment.dict()))
+        await db.community_posts.update_one(
+            {"id": post_id},
+            {"$inc": {"comments_count": 1}}
+        )
+        
+        return comment
+        
+    except Exception as e:
+        logger.error(f"Error adding comment: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to add comment")
+
+@api_router.get("/community/posts/{post_id}/comments")
+async def get_post_comments(
+    post_id: str,
+    limit: int = Query(50, le=100),
+    skip: int = Query(0, ge=0)
+):
+    """Get comments for a post"""
+    try:
+        pipeline = [
+            {"$match": {"post_id": post_id}},
+            {
+                "$lookup": {
+                    "from": "users",
+                    "localField": "user_id",
+                    "foreignField": "id",
+                    "as": "user_info"
+                }
+            },
+            {"$unwind": "$user_info"},
+            {
+                "$lookup": {
+                    "from": "musician_profiles",
+                    "localField": "user_id",
+                    "foreignField": "user_id",
+                    "as": "musician_info"
+                }
+            },
+            {
+                "$project": {
+                    "id": 1,
+                    "content": 1,
+                    "created_at": 1,
+                    "author": {
+                        "username": "$user_info.username",
+                        "stage_name": {"$arrayElemAt": ["$musician_info.stage_name", 0]},
+                        "profile_image": {"$arrayElemAt": ["$musician_info.profile_image", 0]}
+                    }
+                }
+            },
+            {"$sort": {"created_at": 1}},
+            {"$skip": skip},
+            {"$limit": limit}
+        ]
+        
+        comments = await db.post_comments.aggregate(pipeline).to_list(limit)
+        return [prepare_from_mongo(comment) for comment in comments]
+        
+    except Exception as e:
+        logger.error(f"Error getting comments: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get comments")
+
+@api_router.post("/community/messages", response_model=MusicianMessage)
+async def send_message(
+    message_data: MessageCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Send a private message to another musician"""
+    try:
+        message = MusicianMessage(
+            sender_id=current_user.id,
+            **message_data.dict()
+        )
+        
+        await db.musician_messages.insert_one(prepare_for_mongo(message.dict()))
+        return message
+        
+    except Exception as e:
+        logger.error(f"Error sending message: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to send message")
+
+@api_router.get("/community/messages")
+async def get_my_messages(
+    current_user: User = Depends(get_current_user),
+    limit: int = Query(50, le=100),
+    skip: int = Query(0, ge=0)
+):
+    """Get user's private messages"""
+    try:
+        pipeline = [
+            {
+                "$match": {
+                    "$or": [
+                        {"sender_id": current_user.id},
+                        {"recipient_id": current_user.id}
+                    ]
+                }
+            },
+            {
+                "$lookup": {
+                    "from": "users",
+                    "localField": "sender_id",
+                    "foreignField": "id",
+                    "as": "sender_info"
+                }
+            },
+            {
+                "$lookup": {
+                    "from": "users",
+                    "localField": "recipient_id",
+                    "foreignField": "id",
+                    "as": "recipient_info"
+                }
+            },
+            {"$unwind": "$sender_info"},
+            {"$unwind": "$recipient_info"},
+            {
+                "$project": {
+                    "id": 1,
+                    "subject": 1,
+                    "content": 1,
+                    "is_read": 1,
+                    "created_at": 1,
+                    "sender": {
+                        "id": "$sender_info.id",
+                        "username": "$sender_info.username"
+                    },
+                    "recipient": {
+                        "id": "$recipient_info.id",
+                        "username": "$recipient_info.username"
+                    }
+                }
+            },
+            {"$sort": {"created_at": -1}},
+            {"$skip": skip},
+            {"$limit": limit}
+        ]
+        
+        messages = await db.musician_messages.aggregate(pipeline).to_list(limit)
+        return [prepare_from_mongo(message) for message in messages]
+        
+    except Exception as e:
+        logger.error(f"Error getting messages: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get messages")
+
 # Include the router in the main app
 app.include_router(api_router)
 

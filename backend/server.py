@@ -680,12 +680,42 @@ async def upload_image_file(file: UploadFile = File(...), current_user: User = D
         logger.error(f"Error uploading image file: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to upload image file")
 
+# Track upload form data parser
+async def parse_track_form_data(
+    title: str = Form(...),
+    artist: str = Form(...),
+    region: str = Form(...),
+    style: str = Form(...),
+    instrument: Optional[str] = Form(None),
+    duration: int = Form(...),
+    bpm: int = Form(...),
+    mood: str = Form(...),
+    price: float = Form(...),
+    description: Optional[str] = Form(None)
+) -> TrackUploadRequest:
+    """Parse and validate track form data"""
+    try:
+        return TrackUploadRequest(
+            title=title,
+            artist=artist,
+            region=region,
+            style=style,
+            instrument=instrument,
+            duration=duration,
+            bpm=bpm,
+            mood=mood,
+            price=price,
+            description=description
+        )
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=f"Invalid form data: {str(e)}")
+
 @api_router.post("/tracks/upload", response_model=Track)
 async def create_track_with_files(
-    track_data: TrackUploadRequest,
     audio_file: UploadFile = File(...),
     image_file: UploadFile = File(...),
     preview_file: Optional[UploadFile] = File(None),
+    track_data: TrackUploadRequest = Depends(parse_track_form_data),
     current_user: User = Depends(get_current_user)
 ):
     """Create a new track with file uploads"""

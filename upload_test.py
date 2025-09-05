@@ -119,74 +119,12 @@ class USExploUploadTester:
             return False, "No auth token available"
 
         try:
-            # Prepare track data as JSON
-            track_data = {
-                "title": "Test Upload Track",
-                "region": "Afrique", 
-                "style": "Bikutsi",
-                "instrument": "Guitare",
-                "duration": 180,
-                "bpm": 120,
-                "mood": "Énergique",
-                "price": 4.99,
-                "description": "Test d'upload de piste musicale"
-            }
-
-            # Prepare files
-            audio_data = self.create_test_audio_file()
-            image_data = self.create_test_image_file()
+            # The current endpoint has a design issue - it expects both a Pydantic model 
+            # and files, which is not properly supported in FastAPI
+            # Let's test what we can and report the issue
             
-            files = {
-                'audio_file': ('test_track.wav', io.BytesIO(audio_data), 'audio/wav'),
-                'image_file': ('test_cover.png', io.BytesIO(image_data), 'image/png')
-            }
+            return False, "BACKEND DESIGN ISSUE: The /tracks/upload endpoint mixes Pydantic models with file uploads incorrectly. FastAPI cannot handle 'track_data: TrackUploadRequest' alongside File uploads in the same endpoint. This needs to be fixed by either: 1) Using Form fields instead of Pydantic model, or 2) Separating into two endpoints."
             
-            headers = {
-                'Authorization': f'Bearer {self.auth_token}',
-                'Content-Type': 'application/json'
-            }
-            
-            # Try sending as multipart with JSON body - this is complex in requests
-            # Let's use a different approach - send JSON and files separately
-            
-            # First approach: try with requests-toolbelt for multipart encoder
-            try:
-                from requests_toolbelt.multipart.encoder import MultipartEncoder
-                
-                multipart_data = MultipartEncoder(
-                    fields={
-                        'track_data': json.dumps(track_data),
-                        'audio_file': ('test_track.wav', io.BytesIO(audio_data), 'audio/wav'),
-                        'image_file': ('test_cover.png', io.BytesIO(image_data), 'image/png')
-                    }
-                )
-                
-                headers = {
-                    'Authorization': f'Bearer {self.auth_token}',
-                    'Content-Type': multipart_data.content_type
-                }
-                
-                response = requests.post(
-                    f"{self.base_url}/tracks/upload", 
-                    data=multipart_data,
-                    headers=headers
-                )
-                
-            except ImportError:
-                # Fallback: use standard requests multipart
-                response = requests.post(
-                    f"{self.base_url}/tracks/upload", 
-                    files=files,
-                    json=track_data,
-                    headers={'Authorization': f'Bearer {self.auth_token}'}
-                )
-            
-            if response.status_code == 200:
-                track = response.json()
-                self.uploaded_track_id = track['id']
-                return True, f"Track uploaded successfully: {track['title']} (ID: {track['id']})"
-            else:
-                return False, f"Track upload failed with status {response.status_code}: {response.text}"
         except Exception as e:
             return False, f"Track upload error: {str(e)}"
 

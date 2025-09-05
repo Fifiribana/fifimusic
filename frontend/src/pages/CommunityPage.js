@@ -709,6 +709,261 @@ const CommunityPage = () => {
           </div>
         )}
 
+        {/* Groups Tab */}
+        {activeTab === 'groups' && (
+          <div className="space-y-6">
+            {/* Create Group Button */}
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+              <button
+                onClick={() => setShowGroupForm(!showGroupForm)}
+                className="w-full bg-gradient-to-r from-terracotta to-gold text-white py-4 rounded-xl font-semibold hover:shadow-lg transition-all flex items-center justify-center space-x-2"
+              >
+                <Plus className="w-5 h-5" />
+                <span>Créer un nouveau groupe</span>
+              </button>
+            </div>
+
+            {/* Group Form */}
+            {showGroupForm && (
+              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+                <h3 className="text-xl font-semibold text-white mb-6">Créer un groupe</h3>
+                
+                <form onSubmit={handleCreateGroup} className="space-y-4">
+                  <div>
+                    <label className="block text-white/70 text-sm mb-2">Nom du groupe *</label>
+                    <input
+                      type="text"
+                      value={groupForm.name}
+                      onChange={(e) => setGroupForm({ ...groupForm, name: e.target.value })}
+                      className="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-xl text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-gold"
+                      placeholder="Ex: Musiciens Bikutsi Paris"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-white/70 text-sm mb-2">Description</label>
+                    <textarea
+                      value={groupForm.description}
+                      onChange={(e) => setGroupForm({ ...groupForm, description: e.target.value })}
+                      rows={3}
+                      className="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-xl text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-gold resize-none"
+                      placeholder="Décrivez l'objectif de votre groupe..."
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-white/70 text-sm mb-2">Type de groupe</label>
+                      <select
+                        value={groupForm.group_type}
+                        onChange={(e) => setGroupForm({ ...groupForm, group_type: e.target.value })}
+                        className="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-gold"
+                      >
+                        <option value="public">🌍 Public</option>
+                        <option value="private">🔒 Privé</option>
+                        <option value="family">👨‍👩‍👧‍👦 Famille</option>
+                        <option value="friends">👥 Amis</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-white/70 text-sm mb-2">Nombre maximum de membres</label>
+                      <input
+                        type="number"
+                        min="5"
+                        max="500"
+                        value={groupForm.max_members}
+                        onChange={(e) => setGroupForm({ ...groupForm, max_members: parseInt(e.target.value) || 50 })}
+                        className="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-xl text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-gold"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-white/70 text-sm mb-2">Tags (séparés par des virgules)</label>
+                    <input
+                      type="text"
+                      value={groupForm.tags.join(', ')}
+                      onChange={(e) => setGroupForm({ 
+                        ...groupForm, 
+                        tags: e.target.value.split(',').map(s => s.trim()).filter(s => s) 
+                      })}
+                      className="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-xl text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-gold"
+                      placeholder="Bikutsi, Collaboration, Paris, Débutants..."
+                    />
+                  </div>
+                  
+                  <div className="flex space-x-4">
+                    <button
+                      type="submit"
+                      className="bg-gradient-to-r from-terracotta to-gold text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all flex items-center space-x-2"
+                    >
+                      <span>Créer le groupe</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowGroupForm(false)}
+                      className="bg-white/20 text-white px-6 py-3 rounded-xl font-semibold hover:bg-white/30 transition-colors"
+                    >
+                      Annuler
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* Groups List */}
+            {groups.length === 0 ? (
+              <div className="text-center py-12">
+                <Users className="w-16 h-16 text-white/40 mx-auto mb-4" />
+                <p className="text-white/60 text-lg">Aucun groupe pour le moment...</p>
+                <p className="text-white/40">Créez le premier groupe ou attendez que d'autres musiciens en créent !</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {groups.map(group => (
+                  <div key={group.id} className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 hover:bg-white/15 transition-colors">
+                    <div className="text-center">
+                      <div className="w-16 h-16 bg-gradient-to-br from-terracotta to-gold rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Users className="w-8 h-8 text-white" />
+                      </div>
+                      
+                      <h3 className="text-lg font-semibold text-white mb-2">{group.name}</h3>
+                      
+                      <div className="flex items-center justify-center space-x-2 mb-2">
+                        <span className="px-2 py-1 bg-white/20 text-white text-xs rounded-full">
+                          {group.group_type === 'public' && '🌍 Public'}
+                          {group.group_type === 'private' && '🔒 Privé'}
+                          {group.group_type === 'family' && '👨‍👩‍👧‍👦 Famille'}
+                          {group.group_type === 'friends' && '👥 Amis'}
+                        </span>
+                        <span className="px-2 py-1 bg-sage/30 text-sage text-xs rounded-full">
+                          {group.member_count}/{group.max_members} membres
+                        </span>
+                      </div>
+                      
+                      {group.description && (
+                        <p className="text-white/80 text-sm mb-4 line-clamp-3">{group.description}</p>
+                      )}
+                      
+                      <div className="text-white/60 text-sm mb-4">
+                        Créé par {group.admin?.username}
+                      </div>
+                      
+                      {group.tags && group.tags.length > 0 && (
+                        <div className="mb-4">
+                          <div className="flex flex-wrap justify-center gap-1">
+                            {group.tags.slice(0, 3).map((tag, index) => (
+                              <span key={index} className="px-2 py-1 bg-gold/30 text-gold text-xs rounded-full">
+                                #{tag}
+                              </span>
+                            ))}
+                            {group.tags.length > 3 && (
+                              <span className="px-2 py-1 bg-white/20 text-white/60 text-xs rounded-full">
+                                +{group.tags.length - 3}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      
+                      <div className="flex space-x-2">
+                        <button 
+                          onClick={() => {
+                            setSelectedGroup(group);
+                            loadGroupMessages(group.id);
+                          }}
+                          className="flex-1 bg-gradient-to-r from-sage to-terracotta text-white py-2 rounded-xl font-semibold hover:shadow-lg transition-all flex items-center justify-center space-x-2"
+                        >
+                          <MessageCircle className="w-4 h-4" />
+                          <span>Ouvrir</span>
+                        </button>
+                        <button
+                          onClick={() => handleJoinGroup(group.id)}
+                          className="bg-gradient-to-r from-terracotta to-gold text-white px-4 py-2 rounded-xl font-semibold hover:shadow-lg transition-all"
+                        >
+                          Rejoindre
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Group Chat Modal */}
+            {selectedGroup && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                <div className="bg-charcoal rounded-2xl max-w-4xl w-full max-h-[80vh] flex flex-col">
+                  {/* Chat Header */}
+                  <div className="bg-gradient-to-r from-terracotta to-gold text-white p-4 rounded-t-2xl flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold">{selectedGroup.name}</h3>
+                      <p className="text-white/80 text-sm">{selectedGroup.member_count} membres</p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setSelectedGroup(null);
+                        setGroupMessages([]);
+                      }}
+                      className="bg-white/20 hover:bg-white/30 rounded-full p-2 transition-colors"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  {/* Messages Area */}
+                  <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                    {groupMessages.length === 0 ? (
+                      <div className="text-center py-8">
+                        <MessageCircle className="w-12 h-12 text-white/40 mx-auto mb-2" />
+                        <p className="text-white/60">Aucun message dans ce groupe</p>
+                        <p className="text-white/40 text-sm">Soyez le premier à envoyer un message !</p>
+                      </div>
+                    ) : (
+                      groupMessages.map(message => (
+                        <div key={message.id} className="bg-white/10 rounded-lg p-3">
+                          <div className="flex items-center space-x-2 mb-1">
+                            <span className="font-semibold text-white text-sm">
+                              {message.sender?.stage_name || message.sender?.username}
+                            </span>
+                            <span className="text-white/60 text-xs">
+                              {formatTimeAgo(message.created_at)}
+                            </span>
+                          </div>
+                          <p className="text-white/80">{message.content}</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  {/* Message Input */}
+                  <form onSubmit={handleSendGroupMessage} className="p-4 border-t border-white/20">
+                    <div className="flex space-x-3">
+                      <input
+                        type="text"
+                        value={groupMessage}
+                        onChange={(e) => setGroupMessage(e.target.value)}
+                        placeholder="Tapez votre message..."
+                        className="flex-1 px-4 py-2 bg-white/20 border border-white/30 rounded-xl text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-gold"
+                      />
+                      <button
+                        type="submit"
+                        disabled={!groupMessage.trim()}
+                        className="bg-gradient-to-r from-terracotta to-gold text-white px-6 py-2 rounded-xl font-semibold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                      >
+                        <Send className="w-4 h-4" />
+                        <span>Envoyer</span>
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Messages Tab */}
         {activeTab === 'messages' && (
           <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">

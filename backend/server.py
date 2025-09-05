@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 import jwt
 from passlib.context import CryptContext
 from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionResponse, CheckoutStatusResponse, CheckoutSessionRequest
+from emergentintegrations.llm.chat import LlmChat, UserMessage
 import shutil
 import aiofiles
 

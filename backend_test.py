@@ -1204,9 +1204,45 @@ def main():
     
     # Print final results
     print("\n" + "=" * 60)
-    print(f"📊 FINAL RESULTS - UPLOAD ENDPOINT TESTING")
+    print(f"📊 FINAL RESULTS - COMMUNITY ENDPOINTS TESTING")
     print(f"Tests passed: {tester.tests_passed}/{tester.tests_run}")
     print(f"Success rate: {(tester.tests_passed/tester.tests_run)*100:.1f}%")
+    
+    # Focus on community test results
+    community_tests = [
+        "Create Musician Profile", 
+        "Get My Musician Profile", 
+        "Search Musicians (No Filters)",
+        "Search Musicians with Filters",
+        "Create Community Post",
+        "Get Community Feed",
+        "Get Community Feed with Filters",
+        "Like Community Post",
+        "Unlike Community Post",
+        "Add Comment to Post",
+        "Get Post Comments",
+        "Create Second User for Messaging",
+        "Send Private Message",
+        "Get My Messages",
+        "Get Second User Messages",
+        "Create Additional Community Posts"
+    ]
+    
+    community_failed = [test for test in failed_tests if test in community_tests]
+    community_passed = [test for test in community_tests if test not in failed_tests]
+    
+    print(f"\n🎯 COMMUNITY FUNCTIONALITY RESULTS:")
+    print(f"Community tests passed: {len(community_passed)}/{len(community_tests)}")
+    
+    if community_passed:
+        print(f"\n✅ Successful community tests:")
+        for test in community_passed:
+            print(f"   ✅ {test}")
+    
+    if community_failed:
+        print(f"\n❌ Failed community tests:")
+        for test in community_failed:
+            print(f"   ❌ {test}")
     
     # Focus on upload test results
     upload_failed = [test for test in failed_tests if test in upload_tests]
@@ -1214,16 +1250,6 @@ def main():
     
     print(f"\n🎯 UPLOAD FUNCTIONALITY RESULTS:")
     print(f"Upload tests passed: {len(upload_passed)}/{len(upload_tests)}")
-    
-    if upload_passed:
-        print(f"\n✅ Successful upload tests:")
-        for test in upload_passed:
-            print(f"   ✅ {test}")
-    
-    if upload_failed:
-        print(f"\n❌ Failed upload tests:")
-        for test in upload_failed:
-            print(f"   ❌ {test}")
     
     if failed_tests:
         print(f"\n❌ All failed test categories:")
@@ -1233,7 +1259,8 @@ def main():
         print(f"\n🔧 CRITICAL FEATURES TO FIX:")
         critical_features = [
             "User Registration", "User Login", "Get Current User",
-            "Upload Complete Track with Files", "Verify Uploaded Track in Database"
+            "Create Musician Profile", "Get My Musician Profile", "Create Community Post",
+            "Send Private Message", "Get My Messages"
         ]
         critical_failed = [test for test in failed_tests if test in critical_features]
         if critical_failed:
@@ -1242,14 +1269,18 @@ def main():
     else:
         print(f"\n🎉 All test categories passed!")
     
-    # Special focus on the corrected endpoint
-    if "Upload Complete Track with Files" not in failed_tests:
-        print(f"\n🎉 SUCCESS: The corrected /api/tracks/upload endpoint is working!")
-        print(f"   ✅ Form data parsing with Form(...) is functional")
-        print(f"   ✅ Multipart file uploads are working")
-        print(f"   ✅ Track creation with files is successful")
+    # Special focus on community endpoints
+    if len(community_failed) == 0:
+        print(f"\n🎉 SUCCESS: All community endpoints are working perfectly!")
+        print(f"   ✅ Musician profiles creation and retrieval")
+        print(f"   ✅ Musician search with filters (region, genre, instrument, etc.)")
+        print(f"   ✅ Community posts creation and feed")
+        print(f"   ✅ Post likes and comments system")
+        print(f"   ✅ Private messaging between musicians")
+        print(f"   ✅ All endpoints tested with realistic African music data")
     else:
-        print(f"\n❌ ISSUE: The corrected /api/tracks/upload endpoint still has problems")
+        print(f"\n❌ ISSUES: {len(community_failed)} community endpoints have problems")
+        print(f"   Community features need attention before production")
     
     return 0 if len(failed_tests) == 0 else 1
 

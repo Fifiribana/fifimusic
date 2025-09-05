@@ -102,9 +102,10 @@ class RegistrationFixTester:
 
     def test_validation_invalid_email(self):
         """Test de validation - Email invalide"""
+        timestamp = int(time.time())
         invalid_user_data = {
-            "email": "email_invalide_sans_arobase",
-            "username": "test_validation_user",
+            "email": f"email_invalide_sans_arobase_{timestamp}",
+            "username": f"test_validation_user_{timestamp}",
             "password": "MonMotDePasse2025!"
         }
         

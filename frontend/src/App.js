@@ -2,7 +2,7 @@ import React, { useState, useEffect, createContext, useContext } from "react";
 import "./App.css";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import axios from "axios";
-import { Search, Globe, Music, Users, ShoppingCart, User, Menu, X, Play, Pause, Volume2, Heart, Download, CreditCard, LogIn, UserPlus, LogOut, Star, Headphones, MapPin, Settings } from "lucide-react";
+import { Search, Globe, Music, Users, ShoppingCart, User, Menu, X, Play, Pause, Volume2, Heart, Download, CreditCard, LogIn, UserPlus, LogOut, Star, Headphones, MapPin, Settings, ShoppingBag } from "lucide-react";
 import { ToastProvider, useToast } from "./components/Toast";
 import AdminPage from "./pages/AdminPage";
 import CommunityPage from "./pages/CommunityPage";

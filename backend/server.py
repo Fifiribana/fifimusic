@@ -37,6 +37,19 @@ STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY', '')
 # Create the main app without a prefix
 app = FastAPI(title="US EXPLO API", description="Universal Sound Exploration API", version="2.0.0")
 
+# Create upload directories
+UPLOAD_DIR = Path(__file__).parent / "uploads"
+AUDIO_DIR = UPLOAD_DIR / "audio"
+IMAGES_DIR = UPLOAD_DIR / "images"
+
+# Create directories if they don't exist
+UPLOAD_DIR.mkdir(exist_ok=True)
+AUDIO_DIR.mkdir(exist_ok=True)
+IMAGES_DIR.mkdir(exist_ok=True)
+
+# Mount static files for serving uploaded content
+app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
+
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 

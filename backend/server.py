@@ -992,14 +992,16 @@ async def create_track_with_files(
         logger.error(f"Error creating track with files: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to create track: {str(e)}")
 
-# Admin Routes for Simon Messela
+# Admin Routes for track management
 @api_router.get("/admin/my-tracks")
 async def get_my_tracks(current_user: User = Depends(get_current_user)):
-    """Get tracks by Simon Messela"""
+    """Get tracks created by current user"""
     tracks = await db.tracks.find({
         "$or": [
-            {"artist": {"$regex": "Simon Messela", "$options": "i"}},
-            {"artist": {"$regex": "fifi Ribana", "$options": "i"}}
+            {"user_id": current_user.id},  # Tracks owned by user
+            {"artist": current_user.username},  # Legacy tracks by username
+            {"artist": {"$regex": "Simon Messela", "$options": "i"}},  # Legacy Simon Messela tracks
+            {"artist": {"$regex": "fifi Ribana", "$options": "i"}}  # Legacy fifi Ribana tracks
         ]
     }).to_list(100)
     return [Track(**parse_from_mongo(track)) for track in tracks]

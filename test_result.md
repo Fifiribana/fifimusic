@@ -364,6 +364,51 @@ frontend:
         agent: "testing"
         comment: "🎉 COMMUNAUTÉ TESTÉE AVEC SUCCÈS COMPLET! (59/61 tests - 96.7%) ✅ Tous les 11 endpoints communauté fonctionnent PARFAITEMENT: 1) POST /api/community/profile (création profil musicien avec instruments Balafon/Djembé/Guitare/Kora, genres Afrobeat/Highlife/Bikutsi) ✅ 2) GET /api/community/profile/me (récupération profil) ✅ 3) GET /api/community/musicians (recherche sans/avec filtres région/genre/instrument/niveau) ✅ 4) POST /api/community/posts (création posts collaboration/question/showcase/idea avec tags musicaux africains) ✅ 5) GET /api/community/posts (feed communautaire avec filtres) ✅ 6) POST /api/community/posts/{id}/like (like/unlike posts) ✅ 7) POST /api/community/posts/{id}/comments (ajout commentaires) ✅ 8) GET /api/community/posts/{id}/comments (récupération commentaires) ✅ 9) POST /api/community/messages (messages privés entre musiciens) ✅ 10) GET /api/community/messages (récupération messages) ✅ 11) Authentification multi-utilisateurs ✅. Tests avec données réalistes: profil 'Kofi Asante' (Ghana, Afrobeat/Highlife), posts collaboration Afrobeat-Bikutsi, messages entre musiciens. Seuls échecs: Stripe checkout (clé demo attendu). COMMUNAUTÉ MUSICALE OPÉRATIONNELLE!"
 
+  - task: "Système d'abonnements"
+    implemented: true
+    working: false
+    file: "server.py"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Système d'abonnements avec plans Basique/Pro/Premium, restrictions par plan, gestion des permissions"
+      - working: false
+        agent: "testing"
+        comment: "❌ PROBLÈME PARTIEL: GET /api/subscriptions/plans ✅ (3 plans: Basique €9.99, Pro €24.99, Premium €49.99), POST /api/subscriptions/subscribe ✅ (création abonnement Pro réussie), MAIS GET /api/subscriptions/my-subscription ❌ (erreur 500 - problème sérialisation ObjectId dans pipeline MongoDB). Fonctionnalité critique partiellement opérationnelle."
+
+  - task: "Marketplace musicale"
+    implemented: true
+    working: false
+    file: "server.py"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Marketplace pour vente/licence de musique avec restrictions d'abonnement, filtres, gestion des annonces"
+      - working: false
+        agent: "testing"
+        comment: "❌ PROBLÈMES CRITIQUES: 1) POST /api/marketplace/list ❌ (erreur 404 - vérification propriété track échoue car artist='Test Artist Phase 2' != username='testuser_xxx') 2) GET /api/marketplace/listings ✅ (0 annonces) 3) GET /api/marketplace/listings avec filtres prix ❌ (erreur 500 - MongoDB '$or array vide') 4) GET /api/marketplace/my-listings ✅. Nécessite corrections: ownership check et filtres MongoDB."
+
+  - task: "Groupes communautaires"
+    implemented: true
+    working: false
+    file: "server.py"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Système de groupes communautaires avec types (public/privé/famille/amis), messages de groupe, gestion des membres"
+      - working: false
+        agent: "testing"
+        comment: "❌ PROBLÈME PARTIEL: 1) POST /api/community/groups ✅ (groupe 'Musiciens Bikutsi' créé) 2) GET /api/community/groups ✅ (avec/sans filtres) 3) POST /api/community/groups/{id}/join ✅ (adhésion réussie) 4) POST /api/community/groups/{id}/messages ✅ (envoi messages) 5) GET /api/community/groups/{id}/messages ❌ (erreur 403 'Not authenticated' - problème vérification membership). Fonctionnalité majoritairement opérationnelle sauf récupération messages."
+
 metadata:
   created_by: "main_agent"
   version: "2.1"

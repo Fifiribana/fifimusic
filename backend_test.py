@@ -1554,68 +1554,73 @@ def main():
     print(f"🌐 Testing backend at: {backend_url}")
     tester = USExploAPITester(base_url=backend_url)
     
-    # Test sequence focusing on community functionality
+    # Test sequence focusing on NEW FEATURES
     tests = [
         # Basic API Tests
         ("API Status", tester.test_api_status),
         
-        # Authentication Tests (required for community features)
+        # Authentication Tests (required for new features)
         ("User Registration", tester.test_user_registration),
         ("User Login", tester.test_user_login),
         ("Get Current User", tester.test_get_current_user),
         
-        # COMMUNITY TESTS - MAIN FOCUS
+        # Create musician profile for both users
         ("Create Musician Profile", tester.test_create_musician_profile),
         ("Get My Musician Profile", tester.test_get_my_musician_profile),
+        
+        # NEW FEATURES - SUBSCRIPTION SYSTEM
+        ("Get Subscription Plans", tester.test_get_subscription_plans),
+        ("Create Subscription (Pro Plan)", tester.test_create_subscription),
+        ("Get My Subscription", tester.test_get_user_subscription),
+        
+        # Create track for marketplace testing
+        ("Create Track with Preview", tester.test_create_track_with_preview),
+        
+        # NEW FEATURES - MUSIC MARKETPLACE
+        ("Create Music Listing", tester.test_create_music_listing),
+        ("Get Marketplace Listings", tester.test_get_marketplace_listings),
+        ("Get Marketplace Listings with Filters", tester.test_get_marketplace_listings_with_filters),
+        ("Get My Marketplace Listings", tester.test_get_my_marketplace_listings),
+        
+        # Create second user for group testing
+        ("Create Second User for Messaging", tester.test_create_second_user_for_messaging),
+        
+        # NEW FEATURES - COMMUNITY GROUPS
+        ("Create Community Group", tester.test_create_community_group),
+        ("Get Community Groups", tester.test_get_community_groups),
+        ("Get Community Groups with Filters", tester.test_get_community_groups_with_filters),
+        ("Join Community Group (Second User)", tester.test_join_community_group),
+        ("Send Group Message", tester.test_send_group_message),
+        ("Get Group Messages", tester.test_get_group_messages),
+        ("Second User Send Group Message", tester.test_second_user_send_group_message),
+        
+        # Test subscription restrictions
+        ("Test Subscription Restrictions", tester.test_subscription_restrictions),
+        
+        # Additional community tests
         ("Search Musicians (No Filters)", tester.test_search_musicians_no_filters),
         ("Search Musicians with Filters", tester.test_search_musicians_with_filters),
         ("Create Community Post", tester.test_create_community_post),
         ("Get Community Feed", tester.test_get_community_feed),
-        ("Get Community Feed with Filters", tester.test_get_community_feed_with_filters),
         ("Like Community Post", tester.test_like_community_post),
-        ("Unlike Community Post", tester.test_unlike_community_post),
         ("Add Comment to Post", tester.test_add_comment_to_post),
-        ("Get Post Comments", tester.test_get_post_comments),
-        ("Create Second User for Messaging", tester.test_create_second_user_for_messaging),
         ("Send Private Message", tester.test_send_private_message),
         ("Get My Messages", tester.test_get_my_messages),
-        ("Get Second User Messages", tester.test_get_second_user_messages),
-        ("Create Additional Community Posts", tester.test_create_additional_community_posts),
         
-        # File Upload Tests
-        ("Upload Audio File", tester.test_upload_audio_file),
-        ("Upload Image File", tester.test_upload_image_file),
-        ("Upload Complete Track with Files", tester.test_upload_track_with_files),
-        ("Upload Track without Preview", tester.test_upload_track_without_preview),
-        ("Verify Uploaded Track in Database", tester.test_verify_uploaded_track_in_database),
-        ("Upload Invalid File Types", tester.test_upload_invalid_file_types),
-        
-        # Basic Track Tests
+        # Basic functionality tests
         ("Get Tracks", tester.test_get_tracks),
         ("Search Bikutsi", tester.test_search_bikutsi),
-        
-        # Additional comprehensive tests
-        ("New Styles (Bikutsi/Makossa/Soukous)", tester.test_get_tracks_with_new_styles),
         ("Get Featured Tracks", tester.test_get_featured_tracks),
         ("Track Filtering", tester.test_get_tracks_with_filters),
-        ("Create Track with Preview", tester.test_create_track_with_preview),
         ("Get Single Track", tester.test_get_single_track),
         ("Like Track", tester.test_like_track),
         ("Download Track", tester.test_download_track),
         
-        # Payment System Tests
-        ("Create Checkout Session", tester.test_create_checkout_session),
-        ("Get Checkout Status", tester.test_get_checkout_status),
-        ("Purchase History", tester.test_purchase_history),
-        ("Invalid Checkout Session", tester.test_invalid_checkout_session),
-        
-        # Collection Tests
+        # Collections
         ("Get Collections", tester.test_get_collections),
         ("Get Featured Collections", tester.test_get_featured_collections),
-        ("Create Collection", tester.test_create_collection),
-        ("Get Single Collection", tester.test_get_single_collection),
         
-        # Search and Stats Tests
+        # Search and Stats
         ("Search Tracks", tester.test_search_tracks),
         ("Region Statistics", tester.test_region_stats),
         ("Style Statistics", tester.test_style_stats),

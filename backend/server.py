@@ -651,6 +651,26 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     
     return User(**parse_from_mongo(user))
 
+async def get_current_user_optional(authorization: str = Header(None)) -> Optional[User]:
+    """Get current user but don't require authentication (for anonymous donations)"""
+    if not authorization or not authorization.startswith("Bearer "):
+        return None
+    
+    token = authorization.split(" ")[1]
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id: str = payload.get("sub")
+        if user_id is None:
+            return None
+    except jwt.JWTError:
+        return None
+    
+    user = await db.users.find_one({"id": user_id})
+    if user is None:
+        return None
+    
+    return User(**parse_from_mongo(user))
+
 # Routes
 
 # Original routes

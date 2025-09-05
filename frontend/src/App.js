@@ -441,6 +441,10 @@ const Navigation = () => {
                 <CreditCard className="w-4 h-4 mr-1" />
                 Abonnements
               </a>
+              <a href="/ai" className="text-purple-300 hover:text-purple-100 transition-colors flex items-center font-semibold">
+                <Bot className="w-4 h-4 mr-1" />
+                IA Assistant
+              </a>
               <a href="#collections" className="text-white hover:text-terracotta transition-colors">Collections</a>
               <a href="/simon-messela" className="text-white hover:text-terracotta transition-colors font-semibold">
                 Simon Messela

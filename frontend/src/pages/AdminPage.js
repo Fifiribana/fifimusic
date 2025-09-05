@@ -17,13 +17,16 @@ import {
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-// Import contexts directly - need to add them to the beginning after the other imports
-import { AuthContext } from '../App';
-import { ToastContext } from '../components/Toast';
-
 const AdminPage = () => {
-  const { user, token } = useContext(AuthContext);
-  const toast = useContext(ToastContext);
+  // Get auth context manually to avoid circular imports
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(localStorage.getItem('token'));
+  const [toast, setToast] = useState({
+    success: (msg) => console.log('✅', msg),
+    error: (msg) => console.log('❌', msg),
+    info: (msg) => console.log('ℹ️', msg),
+    music: (msg) => console.log('🎵', msg)
+  });
   const [myTracks, setMyTracks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);

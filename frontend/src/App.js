@@ -432,6 +432,14 @@ const Navigation = () => {
                 <Users className="w-4 h-4 mr-1" />
                 Communauté
               </a>
+              <a href="/marketplace" className="text-white hover:text-terracotta transition-colors flex items-center font-semibold">
+                <ShoppingBag className="w-4 h-4 mr-1" />
+                Marketplace
+              </a>
+              <a href="/subscriptions" className="text-white hover:text-terracotta transition-colors flex items-center font-semibold">
+                <CreditCard className="w-4 h-4 mr-1" />
+                Abonnements
+              </a>
               <a href="#collections" className="text-white hover:text-terracotta transition-colors">Collections</a>
               <a href="/simon-messela" className="text-white hover:text-terracotta transition-colors font-semibold">
                 Simon Messela

@@ -1352,6 +1352,17 @@ const AIChatWrapper = () => {
   return <AIChat user={user} authToken={token} />;
 };
 
+// AI Page Wrapper Component
+const AIPageWrapper = () => {
+  const { user, token } = useAuth();
+  return (
+    <div>
+      <Navigation />
+      <AIPage user={user} authToken={token} />
+    </div>
+  );
+};
+
 // Main Home Component
 const Home = () => {
   const helloWorldApi = async () => {

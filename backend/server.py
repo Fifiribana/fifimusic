@@ -300,6 +300,18 @@ def parse_from_mongo(item):
                     pass
     return item
 
+def prepare_from_mongo(item):
+    """Prepare MongoDB document for response by removing MongoDB _id and converting ObjectId to string"""
+    if isinstance(item, dict):
+        # Remove MongoDB _id field if present
+        if '_id' in item:
+            del item['_id']
+        # Convert any remaining ObjectId fields to strings if needed
+        for key, value in item.items():
+            if hasattr(value, '__str__') and 'ObjectId' in str(type(value)):
+                item[key] = str(value)
+    return item
+
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 

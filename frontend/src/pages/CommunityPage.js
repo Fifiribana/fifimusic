@@ -131,6 +131,9 @@ const CommunityPage = () => {
           case 'musicians':
             await loadMusicians();
             break;
+          case 'groups':
+            await loadGroups();
+            break;
           case 'messages':
             await loadMessages();
             break;

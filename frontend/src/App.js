@@ -1369,6 +1369,17 @@ const AIPageWrapper = () => {
   );
 };
 
+// Solidarity Page Wrapper Component
+const SolidarityPageWrapper = () => {
+  const { user, token } = useAuth();
+  return (
+    <div>
+      <Navigation />
+      <SolidarityPage user={user} authToken={token} />
+    </div>
+  );
+};
+
 // Main Home Component
 const Home = () => {
   const helloWorldApi = async () => {

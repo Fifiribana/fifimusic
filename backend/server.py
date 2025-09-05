@@ -2105,8 +2105,6 @@ async def send_group_message(
 
 # ===== AI SYSTEM ENDPOINTS =====
 
-from emergentintegrations.llm.chat import LlmChat, UserMessage
-
 # Initialize AI with environment variables
 EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY', '')
 

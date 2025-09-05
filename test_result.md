@@ -417,8 +417,13 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Communauté de musiciens complète"
-  stuck_tasks: []
+    - "Système d'abonnements"
+    - "Marketplace musicale"
+    - "Groupes communautaires"
+  stuck_tasks:
+    - "Système d'abonnements"
+    - "Marketplace musicale"
+    - "Groupes communautaires"
   test_all: false
   test_priority: "high_first"
 

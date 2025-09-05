@@ -2514,6 +2514,270 @@ async def get_ai_recommendations(
         logger.error(f"Error getting AI recommendations: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to get recommendations")
 
+# ===== AI SONG CREATION ENDPOINTS =====
+
+@api_router.post("/ai/songs/create", response_model=SongCreation)
+async def create_song_with_ai(
+    song_request: SongCreationRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """Create a complete song from inspiration phrase using AI"""
+    try:
+        # Create AI prompt for song generation
+        system_message = f"""Tu es un compositeur et parolier expert spécialisé dans la musique mondiale, particulièrement la musique africaine.
+
+MISSION: Créer une chanson complète à partir d'une phrase d'inspiration.
+
+STYLE MUSICAL: {song_request.musical_style}
+LANGUE: {song_request.language}
+HUMEUR: {song_request.mood}
+TEMPO: {song_request.tempo}
+
+CONSIGNES IMPORTANTES:
+1. Utilise la phrase d'inspiration comme thème central
+2. Crée des paroles authentiques dans le style demandé
+3. Propose une structure claire (Intro, Couplet, Refrain, Pont, Outro)
+4. Suggère des accords appropriés au style
+5. Donne des conseils d'arrangement et production
+6. Respecte la culture musicale du style choisi
+
+FORMAT DE RÉPONSE:
+```
+TITRE: [Titre créatif]
+
+PAROLES:
+[Intro]
+[Paroles d'intro]
+
+[Couplet 1]
+[Paroles couplet 1]
+
+[Refrain]
+[Paroles refrain]
+
+[Couplet 2]
+[Paroles couplet 2]
+
+[Refrain]
+[Paroles refrain]
+
+[Pont]
+[Paroles pont]
+
+[Refrain Final]
+[Paroles refrain final]
+
+[Outro]
+[Paroles outro]
+
+STRUCTURE: Intro - Couplet - Refrain - Couplet - Refrain - Pont - Refrain - Outro
+
+ACCORDS SUGGÉRÉS: [Progression d'accords]
+
+ARRANGEMENT: [Suggestions d'instruments et arrangements]
+
+PRODUCTION: [Conseils de production et enregistrement]
+```
+
+Crée une chanson originale et inspirante !"""
+
+        # Initialize LLM chat for song creation
+        chat = LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            session_id=f"song_creation_{current_user.id}_{int(time.time())}",
+            system_message=system_message
+        ).with_model("openai", "gpt-4o")
+        
+        # Create the prompt
+        user_prompt = f"""Phrase d'inspiration: "{song_request.inspiration_phrase}"
+
+Crée une chanson complète en {song_request.language} dans le style {song_request.musical_style}, avec une humeur {song_request.mood} et un tempo {song_request.tempo}.
+
+La chanson doit être authentique, émotionnelle et refléter l'esprit de {song_request.musical_style}."""
+
+        # Send message to AI
+        user_msg = UserMessage(text=user_prompt)
+        ai_response = await chat.send_message(user_msg)
+        
+        # Parse AI response to extract components
+        response_parts = ai_response.split('\n\n')
+        
+        # Extract title
+        title = song_request.song_title or "Chanson Générée"
+        for part in response_parts:
+            if part.startswith('TITRE:'):
+                title = part.replace('TITRE:', '').strip()
+                break
+        
+        # Extract lyrics (everything between PAROLES: and STRUCTURE:)
+        lyrics = ""
+        structure_info = ""
+        chord_suggestions = []
+        arrangement_notes = ""
+        production_tips = ""
+        
+        # Parse the response more intelligently
+        lines = ai_response.split('\n')
+        current_section = ""
+        
+        for line in lines:
+            line = line.strip()
+            if line.startswith('TITRE:'):
+                title = line.replace('TITRE:', '').strip()
+            elif line.startswith('PAROLES:'):
+                current_section = "lyrics"
+            elif line.startswith('STRUCTURE:'):
+                current_section = "structure"
+            elif line.startswith('ACCORDS SUGGÉRÉS:'):
+                current_section = "chords"
+            elif line.startswith('ARRANGEMENT:'):
+                current_section = "arrangement"
+            elif line.startswith('PRODUCTION:'):
+                current_section = "production"
+            elif line and current_section == "lyrics":
+                lyrics += line + "\n"
+            elif line and current_section == "structure":
+                structure_info += line + " "
+            elif line and current_section == "chords":
+                if line:
+                    chord_suggestions.append(line)
+            elif line and current_section == "arrangement":
+                arrangement_notes += line + " "
+            elif line and current_section == "production":
+                production_tips += line + " "
+        
+        # Create song structure dictionary
+        song_structure = {
+            "structure": structure_info.strip(),
+            "sections": ["Intro", "Couplet", "Refrain", "Pont", "Outro"],
+            "estimated_duration": "3-4 minutes",
+            "key_signature": "À déterminer selon les accords suggérés"
+        }
+        
+        # Create the song creation record
+        song_creation = SongCreation(
+            user_id=current_user.id,
+            title=title,
+            inspiration_phrase=song_request.inspiration_phrase,
+            musical_style=song_request.musical_style,
+            language=song_request.language,
+            mood=song_request.mood,
+            tempo=song_request.tempo,
+            lyrics=lyrics.strip(),
+            song_structure=song_structure,
+            chord_suggestions=chord_suggestions,
+            arrangement_notes=arrangement_notes.strip(),
+            production_tips=production_tips.strip(),
+            ai_analysis=f"Chanson générée dans le style {song_request.musical_style} avec GPT-4o"
+        )
+        
+        # Save to database
+        await db.song_creations.insert_one(prepare_for_mongo(song_creation.dict()))
+        
+        return song_creation
+        
+    except Exception as e:
+        logger.error(f"Error creating song with AI: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to create song with AI")
+
+@api_router.get("/ai/songs/my-creations")
+async def get_my_song_creations(
+    current_user: User = Depends(get_current_user),
+    limit: int = Query(20, le=100)
+):
+    """Get user's song creations"""
+    try:
+        songs = await db.song_creations.find({
+            "user_id": current_user.id
+        }).sort("created_at", -1).limit(limit).to_list(limit)
+        
+        return [prepare_from_mongo(song) for song in songs]
+        
+    except Exception as e:
+        logger.error(f"Error getting song creations: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get song creations")
+
+@api_router.get("/ai/songs/{song_id}")
+async def get_song_creation(
+    song_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Get a specific song creation"""
+    try:
+        song = await db.song_creations.find_one({
+            "id": song_id,
+            "user_id": current_user.id
+        })
+        
+        if not song:
+            raise HTTPException(status_code=404, detail="Song not found")
+        
+        return prepare_from_mongo(song)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting song creation: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get song creation")
+
+@api_router.put("/ai/songs/{song_id}/favorite")
+async def toggle_song_favorite(
+    song_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Toggle favorite status of a song creation"""
+    try:
+        song = await db.song_creations.find_one({
+            "id": song_id,
+            "user_id": current_user.id
+        })
+        
+        if not song:
+            raise HTTPException(status_code=404, detail="Song not found")
+        
+        new_favorite_status = not song.get("is_favorite", False)
+        
+        await db.song_creations.update_one(
+            {"id": song_id},
+            {
+                "$set": {
+                    "is_favorite": new_favorite_status,
+                    "updated_at": datetime.now(timezone.utc)
+                }
+            }
+        )
+        
+        return {"message": f"Song {'added to' if new_favorite_status else 'removed from'} favorites"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error toggling song favorite: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to toggle favorite")
+
+@api_router.delete("/ai/songs/{song_id}")
+async def delete_song_creation(
+    song_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Delete a song creation"""
+    try:
+        result = await db.song_creations.delete_one({
+            "id": song_id,
+            "user_id": current_user.id
+        })
+        
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Song not found")
+        
+        return {"message": "Song deleted successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting song creation: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to delete song")
+
 # Include the router in the main app
 app.include_router(api_router)
 

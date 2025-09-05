@@ -299,6 +299,34 @@ class AIRecommendation(BaseModel):
     is_liked: Optional[bool] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+# Song Creation Models
+class SongCreation(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    title: str
+    inspiration_phrase: str
+    musical_style: str
+    language: str = "français"
+    mood: str = "énergique"
+    tempo: str = "modéré"
+    lyrics: str
+    song_structure: Dict
+    chord_suggestions: List[str] = []
+    arrangement_notes: str = ""
+    production_tips: str = ""
+    ai_analysis: str = ""
+    is_favorite: bool = False
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class SongCreationRequest(BaseModel):
+    inspiration_phrase: str
+    musical_style: str = "Afrobeat"
+    language: str = "français"
+    mood: str = "énergique"
+    tempo: str = "modéré"
+    song_title: Optional[str] = None
+
 # Request/Response Models for AI
 class ChatMessageCreate(BaseModel):
     content: str

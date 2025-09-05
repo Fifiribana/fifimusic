@@ -1532,7 +1532,13 @@ async def create_music_listing(
     """List music for sale/license in the marketplace"""
     try:
         # Verify user owns the track
-        track = await db.tracks.find_one({"id": listing_data.track_id, "artist": current_user.username})
+        track = await db.tracks.find_one({
+            "id": listing_data.track_id,
+            "$or": [
+                {"user_id": current_user.id},
+                {"artist": current_user.username}  # Legacy compatibility
+            ]
+        })
         if not track:
             raise HTTPException(status_code=404, detail="Track not found or not owned by user")
         

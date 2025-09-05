@@ -165,6 +165,25 @@ class CheckoutRequest(BaseModel):
     track_ids: List[str]
     user_email: Optional[str] = None
 
+# File Upload Models
+class FileUploadResponse(BaseModel):
+    filename: str
+    file_url: str
+    file_type: str
+    size: int
+
+class TrackUploadRequest(BaseModel):
+    title: str
+    artist: str = "Simon Messela (fifi Ribana)"
+    region: str
+    style: str
+    instrument: Optional[str] = None
+    duration: int
+    bpm: Optional[int] = None
+    mood: Optional[str] = None
+    price: float
+    description: Optional[str] = None
+
 # Search Models
 class SearchResult(BaseModel):
     tracks: List[Track]

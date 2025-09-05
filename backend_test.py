@@ -18,6 +18,7 @@ class USExploAPITester:
         self.auth_token = None
         self.user_data = None
         self.session_id = None
+        self.uploaded_track_id = None
 
     def run_test(self, name, method, endpoint, expected_status, data=None, params=None, auth_required=False):
         """Run a single API test"""

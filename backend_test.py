@@ -19,6 +19,12 @@ class USExploAPITester:
         self.user_data = None
         self.session_id = None
         self.uploaded_track_id = None
+        # Community-specific variables
+        self.musician_profile_id = None
+        self.created_post_id = None
+        self.second_user_token = None
+        self.second_user_data = None
+        self.sent_message_id = None
 
     def run_test(self, name, method, endpoint, expected_status, data=None, params=None, auth_required=False):
         """Run a single API test"""

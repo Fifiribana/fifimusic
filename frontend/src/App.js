@@ -484,7 +484,9 @@ const Navigation = () => {
                 <a href="#explorer" className="block px-3 py-2 text-white hover:text-terracotta">Explorer</a>
                 <a href="#collections" className="block px-3 py-2 text-white hover:text-terracotta">Collections</a>
                 <a href="/simon-messela" className="block px-3 py-2 text-white hover:text-terracotta font-semibold">Simon Messela</a>
-                <a href="#" className="block px-3 py-2 text-white hover:text-terracotta">Artistes</a>
+                {user && (
+                  <a href="/admin" className="block px-3 py-2 text-gold hover:text-terracotta font-semibold">Mes Créations</a>
+                )}
                 {!user && (
                   <button 
                     onClick={() => setShowLoginModal(true)}

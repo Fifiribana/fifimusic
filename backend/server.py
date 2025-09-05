@@ -1508,11 +1508,11 @@ async def get_user_subscription(current_user: User = Depends(get_current_user)):
             }
         ]
         
-        subscription = await db.user_subscriptions.aggregate(pipeline).to_list(1)
-        if not subscription:
+        subscription_list = await db.user_subscriptions.aggregate(pipeline).to_list(1)
+        if not subscription_list:
             return None
         
-        return prepare_from_mongo(subscription[0])
+        return prepare_from_mongo(subscription_list[0])
         
     except Exception as e:
         logger.error(f"Error getting user subscription: {str(e)}")

@@ -42,6 +42,9 @@ const CommunityPage = () => {
   // Form states
   const [showPostForm, setShowPostForm] = useState(false);
   const [showProfileForm, setShowProfileForm] = useState(false);
+  const [showGroupForm, setShowGroupForm] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState(null);
+  const [groupMessages, setGroupMessages] = useState([]);
   const [searchFilters, setSearchFilters] = useState({
     region: '',
     genre: '',

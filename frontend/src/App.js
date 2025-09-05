@@ -426,6 +426,10 @@ const Navigation = () => {
                   Explorer <Globe className="w-4 h-4 ml-1" />
                 </a>
               </div>
+              <a href="/community" className="text-white hover:text-terracotta transition-colors flex items-center font-semibold">
+                <Users className="w-4 h-4 mr-1" />
+                Communauté
+              </a>
               <a href="#collections" className="text-white hover:text-terracotta transition-colors">Collections</a>
               <a href="/simon-messela" className="text-white hover:text-terracotta transition-colors font-semibold">
                 Simon Messela

@@ -69,9 +69,10 @@ class RegistrationFixTester:
 
     def test_new_user_registration(self):
         """Test d'inscription basique - POST /api/auth/register avec nouvel utilisateur"""
+        timestamp = int(time.time())
         user_data = {
-            "email": "nouveau_utilisateur_test@usexplo.com",
-            "username": "nouveau_utilisateur_test",
+            "email": f"nouveau_utilisateur_test_{timestamp}@usexplo.com",
+            "username": f"nouveau_utilisateur_test_{timestamp}",
             "password": "MonMotDePasse2025!"
         }
         

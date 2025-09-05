@@ -186,6 +186,28 @@ const CommunityPage = () => {
     }
   };
 
+  const loadGroups = async () => {
+    try {
+      const response = await axios.get(`${API}/community/groups`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setGroups(response.data);
+    } catch (error) {
+      toast.error('Erreur lors du chargement des groupes');
+    }
+  };
+
+  const loadGroupMessages = async (groupId) => {
+    try {
+      const response = await axios.get(`${API}/community/groups/${groupId}/messages`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setGroupMessages(response.data);
+    } catch (error) {
+      toast.error('Erreur lors du chargement des messages du groupe');
+    }
+  };
+
   const handleCreatePost = async (e) => {
     e.preventDefault();
     

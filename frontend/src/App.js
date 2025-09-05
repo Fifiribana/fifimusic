@@ -1557,6 +1557,7 @@ function App() {
                   <Route path="/community" element={<CommunityPage />} />
                   <Route path="/marketplace" element={<MarketplacePage />} />
                   <Route path="/subscriptions" element={<SubscriptionPage />} />
+                  <Route path="/ai" element={<AIPageWrapper />} />
                   <Route path="/success" element={<SuccessPage />} />
                   <Route path="/cancel" element={<Navigate to="/" />} />
                 </Routes>

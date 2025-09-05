@@ -9,7 +9,7 @@ import os
 from datetime import datetime
 
 class USExploUploadTester:
-    def __init__(self, base_url="https://ae586f29-8094-4784-91e4-f1b7e4d11a65.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://localhost-dev.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.tests_run = 0
         self.tests_passed = 0

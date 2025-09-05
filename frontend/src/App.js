@@ -501,6 +501,8 @@ const Navigation = () => {
                 <a href="/" className="block px-3 py-2 text-white hover:text-terracotta">Accueil</a>
                 <a href="#explorer" className="block px-3 py-2 text-white hover:text-terracotta">Explorer</a>
                 <a href="/community" className="block px-3 py-2 text-white hover:text-terracotta">Communauté</a>
+                <a href="/marketplace" className="block px-3 py-2 text-white hover:text-terracotta">Marketplace</a>
+                <a href="/subscriptions" className="block px-3 py-2 text-white hover:text-terracotta">Abonnements</a>
                 <a href="#collections" className="block px-3 py-2 text-white hover:text-terracotta">Collections</a>
                 <a href="/simon-messela" className="block px-3 py-2 text-white hover:text-terracotta font-semibold">Simon Messela</a>
                 {user && (

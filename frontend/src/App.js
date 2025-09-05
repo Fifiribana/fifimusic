@@ -131,6 +131,9 @@ const useAuth = () => {
   return context;
 };
 
+// Export useAuth hook
+export { useAuth };
+
 // Audio Player Context
 const AudioContext = createContext();
 

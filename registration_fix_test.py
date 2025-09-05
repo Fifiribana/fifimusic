@@ -134,8 +134,12 @@ class RegistrationFixTester:
 
     def test_duplicate_email_registration(self):
         """Test cas d'erreur - Inscription avec email déjà existant"""
+        if not self.user_data:
+            print("❌ Aucune donnée utilisateur disponible pour le test de duplication")
+            return False
+            
         duplicate_user_data = {
-            "email": "nouveau_utilisateur_test@usexplo.com",  # Same email as first test
+            "email": self.user_data['email'],  # Same email as first test
             "username": "autre_nom_utilisateur",
             "password": "AutreMotDePasse2025!"
         }

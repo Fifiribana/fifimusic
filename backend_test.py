@@ -1104,7 +1104,7 @@ class USExploAPITester:
         return all(results)
 
 def main():
-    print("🎵 US EXPLO API Testing Suite - Upload Endpoint Testing")
+    print("🎵 US EXPLO API Testing Suite - Community Endpoints Testing")
     print("=" * 60)
     
     # Get the correct backend URL from environment
@@ -1115,17 +1115,35 @@ def main():
     print(f"🌐 Testing backend at: {backend_url}")
     tester = USExploAPITester(base_url=backend_url)
     
-    # Test sequence focusing on upload functionality
+    # Test sequence focusing on community functionality
     tests = [
         # Basic API Tests
         ("API Status", tester.test_api_status),
         
-        # Authentication Tests (required for uploads)
+        # Authentication Tests (required for community features)
         ("User Registration", tester.test_user_registration),
         ("User Login", tester.test_user_login),
         ("Get Current User", tester.test_get_current_user),
         
-        # File Upload Tests - MAIN FOCUS
+        # COMMUNITY TESTS - MAIN FOCUS
+        ("Create Musician Profile", tester.test_create_musician_profile),
+        ("Get My Musician Profile", tester.test_get_my_musician_profile),
+        ("Search Musicians (No Filters)", tester.test_search_musicians_no_filters),
+        ("Search Musicians with Filters", tester.test_search_musicians_with_filters),
+        ("Create Community Post", tester.test_create_community_post),
+        ("Get Community Feed", tester.test_get_community_feed),
+        ("Get Community Feed with Filters", tester.test_get_community_feed_with_filters),
+        ("Like Community Post", tester.test_like_community_post),
+        ("Unlike Community Post", tester.test_unlike_community_post),
+        ("Add Comment to Post", tester.test_add_comment_to_post),
+        ("Get Post Comments", tester.test_get_post_comments),
+        ("Create Second User for Messaging", tester.test_create_second_user_for_messaging),
+        ("Send Private Message", tester.test_send_private_message),
+        ("Get My Messages", tester.test_get_my_messages),
+        ("Get Second User Messages", tester.test_get_second_user_messages),
+        ("Create Additional Community Posts", tester.test_create_additional_community_posts),
+        
+        # File Upload Tests
         ("Upload Audio File", tester.test_upload_audio_file),
         ("Upload Image File", tester.test_upload_image_file),
         ("Upload Complete Track with Files", tester.test_upload_track_with_files),

@@ -655,22 +655,6 @@ class USExploAPITester:
                 os.unlink(temp_file.name)
 
     # ===== MUSICIAN COMMUNITY TESTS =====
-    def __init__(self, base_url="http://localhost:8001/api"):
-        self.base_url = base_url
-        self.tests_run = 0
-        self.tests_passed = 0
-        self.created_track_id = None
-        self.created_collection_id = None
-        self.auth_token = None
-        self.user_data = None
-        self.session_id = None
-        self.uploaded_track_id = None
-        # Community-specific variables
-        self.musician_profile_id = None
-        self.created_post_id = None
-        self.second_user_token = None
-        self.second_user_data = None
-        self.sent_message_id = None
 
     def test_create_musician_profile(self):
         """Test creating a musician profile with African instruments and genres"""

@@ -72,6 +72,16 @@ const CommunityPage = () => {
     social_links: {}
   });
 
+  const [groupForm, setGroupForm] = useState({
+    name: '',
+    description: '',
+    group_type: 'public',
+    max_members: 50,
+    tags: []
+  });
+
+  const [groupMessage, setGroupMessage] = useState('');
+
   // Check authentication
   useEffect(() => {
     const checkAuth = async () => {

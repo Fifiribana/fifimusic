@@ -1648,8 +1648,8 @@ def main():
             failed_tests.append(test_name)
     
     # Print final results
-    print("\n" + "=" * 60)
-    print(f"📊 FINAL RESULTS - COMMUNITY ENDPOINTS TESTING")
+    print("\n" + "=" * 70)
+    print(f"📊 FINAL RESULTS - NEW FEATURES TESTING")
     print(f"Tests passed: {tester.tests_passed}/{tester.tests_run}")
     print(f"Success rate: {(tester.tests_passed/tester.tests_run)*100:.1f}%")
     

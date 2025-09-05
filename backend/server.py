@@ -2316,6 +2316,87 @@ async def startup_event():
                 if not existing:
                     collection = Collection(**collection_data.dict())
                     await db.collections.insert_one(prepare_for_mongo(collection.dict()))
+    
+    # Initialize subscription plans if not exist
+    subscription_count = await db.subscription_plans.count_documents({})
+    if subscription_count == 0:
+        logger.info("Initializing subscription plans...")
+        
+        subscription_plans = [
+            SubscriptionPlan(
+                name="Basique",
+                description="Plan parfait pour les musiciens débutants qui découvrent la communauté US EXPLO",
+                price_monthly=9.99,
+                price_yearly=99.99,
+                features=[
+                    "Upload jusqu'à 5 pistes par mois",
+                    "Accès à la communauté musicale",
+                    "Création de 3 groupes maximum",
+                    "Messages privés illimités",
+                    "Lecteur audio standard",
+                    "Support email"
+                ],
+                max_uploads_per_month=5,
+                max_groups=3,
+                can_sell_music=False,
+                can_create_events=False,
+                priority_support=False,
+                analytics_access=False
+            ),
+            SubscriptionPlan(
+                name="Pro",
+                description="Plan idéal pour les musiciens sérieux qui veulent vendre leur musique et développer leur carrière",
+                price_monthly=24.99,
+                price_yearly=249.99,
+                features=[
+                    "Upload jusqu'à 25 pistes par mois",
+                    "Vente de musique dans la marketplace",
+                    "Commission réduite (10% au lieu de 15%)",
+                    "Création de 10 groupes maximum",
+                    "Statistiques détaillées",
+                    "Création d'événements",
+                    "Support prioritaire",
+                    "Badge professionnel"
+                ],
+                max_uploads_per_month=25,
+                max_groups=10,
+                can_sell_music=True,
+                can_create_events=True,
+                priority_support=True,
+                analytics_access=True
+            ),
+            SubscriptionPlan(
+                name="Premium",
+                description="Plan complet pour les professionnels de la musique et labels indépendants",
+                price_monthly=49.99,
+                price_yearly=499.99,
+                features=[
+                    "Uploads illimités",
+                    "Vente de musique avec commission minimale (5%)",
+                    "Groupes illimités",
+                    "Analytics avancés et insights",
+                    "Support téléphonique prioritaire",
+                    "API d'intégration",
+                    "Promotion sur la page d'accueil",
+                    "Accès anticipé aux nouvelles fonctionnalités",
+                    "Badge premium exclusif"
+                ],
+                max_uploads_per_month=999999,  # Unlimited
+                max_groups=999999,  # Unlimited
+                can_sell_music=True,
+                can_create_events=True,
+                priority_support=True,
+                analytics_access=True
+            )
+        ]
+        
+        for plan_data in subscription_plans:
+            plan = SubscriptionPlan(**plan_data.dict())
+            await db.subscription_plans.insert_one(prepare_for_mongo(plan.dict()))
+        
+        logger.info(f"Initialized {len(subscription_plans)} subscription plans")
+    
+    logger.info("US EXPLO API fully initialized and ready! 🎵🌍")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

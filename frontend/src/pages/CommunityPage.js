@@ -32,7 +32,7 @@ const CommunityPage = () => {
   const [loading, setLoading] = useState(true);
   
   // Community states
-  const [activeTab, setActiveTab] = useState('feed'); // feed, musicians, messages, profile
+  const [activeTab, setActiveTab] = useState('feed'); // feed, musicians, groups, messages, profile
   const [posts, setPosts] = useState([]);
   const [musicians, setMusicians] = useState([]);
   const [messages, setMessages] = useState([]);

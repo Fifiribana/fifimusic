@@ -119,19 +119,6 @@ class USExploUploadTester:
             return False, "No auth token available"
 
         try:
-            # Prepare track data
-            track_data = {
-                "title": "Test Upload Track",
-                "region": "Afrique",
-                "style": "Bikutsi",
-                "instrument": "Guitare",
-                "duration": 180,
-                "bpm": 120,
-                "mood": "Énergique",
-                "price": 4.99,
-                "description": "Test d'upload de piste musicale"
-            }
-
             # Prepare files
             audio_data = self.create_test_audio_file()
             image_data = self.create_test_image_file()
@@ -141,9 +128,17 @@ class USExploUploadTester:
                 'image_file': ('test_cover.png', io.BytesIO(image_data), 'image/png')
             }
             
-            # Send track_data as form data
+            # Send track_data as individual form fields
             data = {
-                'track_data': json.dumps(track_data)
+                'title': 'Test Upload Track',
+                'region': 'Afrique',
+                'style': 'Bikutsi',
+                'instrument': 'Guitare',
+                'duration': '180',
+                'bpm': '120',
+                'mood': 'Énergique',
+                'price': '4.99',
+                'description': "Test d'upload de piste musicale"
             }
             
             headers = {'Authorization': f'Bearer {self.auth_token}'}

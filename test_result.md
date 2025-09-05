@@ -349,6 +349,21 @@ frontend:
         agent: "testing"
         comment: "✅ PROBLÈME RÉSOLU! L'endpoint /api/tracks/upload corrigé fonctionne PARFAITEMENT avec Form(...) pour chaque champ. Tests complets réussis: ✅ Upload audio individuel ✅ Upload image individuel ✅ Upload track complet avec fichiers (audio + image + preview optionnel) ✅ Vérification en base de données ✅ Validation types fichiers ✅ Gestion erreurs. Nouvel utilisateur créé (testuser_1757034991), track uploadé avec succès (ID: 398570de-9035-46f1-b82d-29a6511601eb), fichiers sauvegardés correctement. Architecture FastAPI 2025 respectée avec Form(...) au lieu de modèles Pydantic directs."
 
+  - task: "Communauté de musiciens complète"
+    implemented: true
+    working: true
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Implémentation complète des endpoints communauté: profils musiciens, posts, likes, commentaires, messages privés avec données africaines réalistes"
+      - working: true
+        agent: "testing"
+        comment: "🎉 COMMUNAUTÉ TESTÉE AVEC SUCCÈS COMPLET! (59/61 tests - 96.7%) ✅ Tous les 11 endpoints communauté fonctionnent PARFAITEMENT: 1) POST /api/community/profile (création profil musicien avec instruments Balafon/Djembé/Guitare/Kora, genres Afrobeat/Highlife/Bikutsi) ✅ 2) GET /api/community/profile/me (récupération profil) ✅ 3) GET /api/community/musicians (recherche sans/avec filtres région/genre/instrument/niveau) ✅ 4) POST /api/community/posts (création posts collaboration/question/showcase/idea avec tags musicaux africains) ✅ 5) GET /api/community/posts (feed communautaire avec filtres) ✅ 6) POST /api/community/posts/{id}/like (like/unlike posts) ✅ 7) POST /api/community/posts/{id}/comments (ajout commentaires) ✅ 8) GET /api/community/posts/{id}/comments (récupération commentaires) ✅ 9) POST /api/community/messages (messages privés entre musiciens) ✅ 10) GET /api/community/messages (récupération messages) ✅ 11) Authentification multi-utilisateurs ✅. Tests avec données réalistes: profil 'Kofi Asante' (Ghana, Afrobeat/Highlife), posts collaboration Afrobeat-Bikutsi, messages entre musiciens. Seuls échecs: Stripe checkout (clé demo attendu). COMMUNAUTÉ MUSICALE OPÉRATIONNELLE!"
+
 metadata:
   created_by: "main_agent"
   version: "2.0"

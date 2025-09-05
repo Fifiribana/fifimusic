@@ -255,6 +255,69 @@ class GroupMessage(BaseModel):
     edited_at: Optional[datetime] = None
     is_deleted: bool = False
 
+# AI System Models
+class ChatMessage(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    session_id: str
+    user_id: str
+    message_type: str = "user"  # user, assistant, system
+    content: str
+    metadata: Optional[Dict] = {}
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ChatSession(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    title: str = "Nouvelle conversation"
+    context_data: Optional[Dict] = {}  # User context (subscription, preferences, etc.)
+    is_active: bool = True
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class AutomationTask(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    task_type: str  # recommendation, playlist_update, notification, analysis
+    task_name: str
+    description: str
+    schedule: str = "daily"  # daily, weekly, monthly, on_demand
+    is_active: bool = True
+    last_run: Optional[datetime] = None
+    next_run: Optional[datetime] = None
+    config: Optional[Dict] = {}
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class AIRecommendation(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    recommendation_type: str  # track, artist, style, collaboration
+    content: Dict  # The recommended content
+    reason: str  # AI explanation for the recommendation
+    confidence_score: float = 0.0
+    is_viewed: bool = False
+    is_liked: Optional[bool] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+# Request/Response Models for AI
+class ChatMessageCreate(BaseModel):
+    content: str
+    session_id: Optional[str] = None
+
+class ChatMessageResponse(BaseModel):
+    message_id: str
+    session_id: str
+    content: str
+    message_type: str
+    created_at: datetime
+
+class AutomationTaskCreate(BaseModel):
+    task_type: str
+    task_name: str
+    description: str
+    schedule: str = "daily"
+    config: Optional[Dict] = {}
+
 # Request/Response Models for new features
 class SubscriptionCreateRequest(BaseModel):
     plan_id: str

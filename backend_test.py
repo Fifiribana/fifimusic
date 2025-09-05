@@ -1543,8 +1543,9 @@ class USExploAPITester:
         return success
 
 def main():
-    print("🎵 US EXPLO API Testing Suite - Community Endpoints Testing")
-    print("=" * 60)
+    print("🎵 US EXPLO API Testing Suite - NEW FEATURES TESTING")
+    print("🔥 Testing: Subscription System, Music Marketplace, Community Groups")
+    print("=" * 70)
     
     # Get the correct backend URL from environment
     backend_url = os.environ.get('REACT_APP_BACKEND_URL', 'http://localhost:8001')

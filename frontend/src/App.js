@@ -1559,6 +1559,7 @@ function App() {
                   <Route path="/marketplace" element={<MarketplacePage />} />
                   <Route path="/subscriptions" element={<SubscriptionPage />} />
                   <Route path="/ai" element={<AIPageWrapper />} />
+                  <Route path="/song-demo" element={<SongDemo />} />
                   <Route path="/success" element={<SuccessPage />} />
                   <Route path="/cancel" element={<Navigate to="/" />} />
                 </Routes>

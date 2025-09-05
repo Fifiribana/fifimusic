@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { Bot, Sparkles, TrendingUp, Music, Users, Zap, ArrowRight, RefreshCw } from "lucide-react";
+import { Bot, Sparkles, TrendingUp, Music, Users, Zap, ArrowRight, RefreshCw, Wand2 } from "lucide-react";
 import axios from "axios";
+import SongCreator from "../components/SongCreator";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;

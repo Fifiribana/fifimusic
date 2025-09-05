@@ -262,6 +262,67 @@ const CommunityPage = () => {
     }
   };
 
+  const handleCreateGroup = async (e) => {
+    e.preventDefault();
+    
+    if (!groupForm.name.trim()) {
+      toast.error('Veuillez saisir le nom du groupe');
+      return;
+    }
+
+    try {
+      await axios.post(`${API}/community/groups`, groupForm, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      toast.success('Groupe créé avec succès !');
+      setGroupForm({
+        name: '',
+        description: '',
+        group_type: 'public',
+        max_members: 50,
+        tags: []
+      });
+      setShowGroupForm(false);
+      await loadGroups();
+    } catch (error) {
+      const message = error.response?.data?.detail || 'Erreur lors de la création du groupe';
+      toast.error(message);
+    }
+  };
+
+  const handleJoinGroup = async (groupId) => {
+    try {
+      await axios.post(`${API}/community/groups/${groupId}/join`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Vous avez rejoint le groupe !');
+      await loadGroups();
+    } catch (error) {
+      const message = error.response?.data?.detail || 'Erreur lors de l\'adhésion au groupe';
+      toast.error(message);
+    }
+  };
+
+  const handleSendGroupMessage = async (e) => {
+    e.preventDefault();
+    
+    if (!groupMessage.trim() || !selectedGroup) return;
+
+    try {
+      await axios.post(`${API}/community/groups/${selectedGroup.id}/messages`, {
+        content: groupMessage
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      setGroupMessage('');
+      await loadGroupMessages(selectedGroup.id);
+    } catch (error) {
+      toast.error('Erreur lors de l\'envoi du message');
+    }
+  };
+
   const formatTimeAgo = (dateString) => {
     const date = new Date(dateString);
     const now = new Date();

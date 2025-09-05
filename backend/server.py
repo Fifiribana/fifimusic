@@ -979,6 +979,7 @@ async def create_track_with_files(
         # Create track with uploaded files
         track = Track(
             **track_data.dict(),
+            user_id=current_user.id,  # Set owner
             audio_url=audio_url,
             artwork_url=image_url,
             preview_url=preview_url or audio_url

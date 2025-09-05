@@ -621,6 +621,160 @@ async def get_style_stats():
     stats = await db.tracks.aggregate(pipeline).to_list(100)
     return [{"style": stat["_id"], "track_count": stat["count"], "avg_price": round(stat["avg_price"], 2)} for stat in stats]
 
+# File Upload Routes
+@api_router.post("/upload/audio", response_model=FileUploadResponse)
+async def upload_audio_file(file: UploadFile = File(...), current_user: User = Depends(get_current_user)):
+    """Upload an audio file"""
+    if not file.content_type or not file.content_type.startswith('audio/'):
+        raise HTTPException(status_code=400, detail="File must be an audio file")
+    
+    # Generate unique filename
+    file_extension = file.filename.split('.')[-1] if '.' in file.filename else 'mp3'
+    unique_filename = f"{uuid.uuid4()}.{file_extension}"
+    file_path = AUDIO_DIR / unique_filename
+    
+    try:
+        async with aiofiles.open(file_path, 'wb') as f:
+            content = await file.read()
+            await f.write(content)
+        
+        file_url = f"/uploads/audio/{unique_filename}"
+        file_size = len(content)
+        
+        return FileUploadResponse(
+            filename=unique_filename,
+            file_url=file_url,
+            file_type=file.content_type,
+            size=file_size
+        )
+    except Exception as e:
+        logger.error(f"Error uploading audio file: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to upload audio file")
+
+@api_router.post("/upload/image", response_model=FileUploadResponse)
+async def upload_image_file(file: UploadFile = File(...), current_user: User = Depends(get_current_user)):
+    """Upload an image file"""
+    if not file.content_type or not file.content_type.startswith('image/'):
+        raise HTTPException(status_code=400, detail="File must be an image file")
+    
+    # Generate unique filename
+    file_extension = file.filename.split('.')[-1] if '.' in file.filename else 'jpg'
+    unique_filename = f"{uuid.uuid4()}.{file_extension}"
+    file_path = IMAGES_DIR / unique_filename
+    
+    try:
+        async with aiofiles.open(file_path, 'wb') as f:
+            content = await file.read()
+            await f.write(content)
+        
+        file_url = f"/uploads/images/{unique_filename}"
+        file_size = len(content)
+        
+        return FileUploadResponse(
+            filename=unique_filename,
+            file_url=file_url,
+            file_type=file.content_type,
+            size=file_size
+        )
+    except Exception as e:
+        logger.error(f"Error uploading image file: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to upload image file")
+
+@api_router.post("/tracks/upload", response_model=Track)
+async def create_track_with_files(
+    track_data: TrackUploadRequest,
+    audio_file: UploadFile = File(...),
+    image_file: UploadFile = File(...),
+    preview_file: Optional[UploadFile] = File(None),
+    current_user: User = Depends(get_current_user)
+):
+    """Create a new track with file uploads"""
+    try:
+        # Upload audio file
+        if not audio_file.content_type or not audio_file.content_type.startswith('audio/'):
+            raise HTTPException(status_code=400, detail="Audio file must be an audio file")
+        
+        audio_extension = audio_file.filename.split('.')[-1] if '.' in audio_file.filename else 'mp3'
+        audio_filename = f"audio_{uuid.uuid4()}.{audio_extension}"
+        audio_path = AUDIO_DIR / audio_filename
+        
+        async with aiofiles.open(audio_path, 'wb') as f:
+            audio_content = await audio_file.read()
+            await f.write(audio_content)
+        
+        audio_url = f"/uploads/audio/{audio_filename}"
+        
+        # Upload image file
+        if not image_file.content_type or not image_file.content_type.startswith('image/'):
+            raise HTTPException(status_code=400, detail="Image file must be an image file")
+        
+        image_extension = image_file.filename.split('.')[-1] if '.' in image_file.filename else 'jpg'
+        image_filename = f"cover_{uuid.uuid4()}.{image_extension}"
+        image_path = IMAGES_DIR / image_filename
+        
+        async with aiofiles.open(image_path, 'wb') as f:
+            image_content = await image_file.read()
+            await f.write(image_content)
+        
+        image_url = f"/uploads/images/{image_filename}"
+        
+        # Upload preview file if provided
+        preview_url = None
+        if preview_file:
+            if not preview_file.content_type or not preview_file.content_type.startswith('audio/'):
+                raise HTTPException(status_code=400, detail="Preview file must be an audio file")
+            
+            preview_extension = preview_file.filename.split('.')[-1] if '.' in preview_file.filename else 'mp3'
+            preview_filename = f"preview_{uuid.uuid4()}.{preview_extension}"
+            preview_path = AUDIO_DIR / preview_filename
+            
+            async with aiofiles.open(preview_path, 'wb') as f:
+                preview_content = await preview_file.read()
+                await f.write(preview_content)
+            
+            preview_url = f"/uploads/audio/{preview_filename}"
+        
+        # Create track with uploaded files
+        track = Track(
+            **track_data.dict(),
+            audio_url=audio_url,
+            artwork_url=image_url,
+            preview_url=preview_url or audio_url
+        )
+        
+        await db.tracks.insert_one(prepare_for_mongo(track.dict()))
+        return track
+        
+    except Exception as e:
+        logger.error(f"Error creating track with files: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to create track: {str(e)}")
+
+# Admin Routes for Simon Messela
+@api_router.get("/admin/my-tracks")
+async def get_my_tracks(current_user: User = Depends(get_current_user)):
+    """Get tracks by Simon Messela"""
+    tracks = await db.tracks.find({
+        "$or": [
+            {"artist": {"$regex": "Simon Messela", "$options": "i"}},
+            {"artist": {"$regex": "fifi Ribana", "$options": "i"}}
+        ]
+    }).to_list(100)
+    return [Track(**parse_from_mongo(track)) for track in tracks]
+
+@api_router.delete("/admin/tracks/{track_id}")
+async def delete_my_track(track_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a track (admin only)"""
+    track = await db.tracks.find_one({"id": track_id})
+    if not track:
+        raise HTTPException(status_code=404, detail="Track not found")
+    
+    # Only allow deletion of Simon Messela tracks for security
+    if "Simon Messela" not in track.get("artist", "") and "fifi Ribana" not in track.get("artist", ""):
+        raise HTTPException(status_code=403, detail="Not authorized to delete this track")
+    
+    await db.tracks.delete_one({"id": track_id})
+    return {"message": "Track deleted successfully"}
+
 # Include the router in the main app
 app.include_router(api_router)
 

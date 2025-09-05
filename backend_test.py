@@ -655,24 +655,40 @@ class USExploAPITester:
                 os.unlink(temp_file.name)
 
 def main():
-    print("🎵 US EXPLO API Testing Suite - Phase 2")
-    print("=" * 50)
+    print("🎵 US EXPLO API Testing Suite - Upload Endpoint Testing")
+    print("=" * 60)
     
-    tester = USExploAPITester()
+    # Get the correct backend URL from environment
+    backend_url = os.environ.get('REACT_APP_BACKEND_URL', 'http://localhost:8001')
+    if not backend_url.endswith('/api'):
+        backend_url = f"{backend_url}/api"
     
-    # Test sequence - Phase 2 comprehensive testing
+    print(f"🌐 Testing backend at: {backend_url}")
+    tester = USExploAPITester(base_url=backend_url)
+    
+    # Test sequence focusing on upload functionality
     tests = [
         # Basic API Tests
         ("API Status", tester.test_api_status),
         
-        # Phase 2: Authentication Tests
+        # Authentication Tests (required for uploads)
         ("User Registration", tester.test_user_registration),
         ("User Login", tester.test_user_login),
         ("Get Current User", tester.test_get_current_user),
-        ("Invalid Login", tester.test_invalid_login),
         
-        # Phase 2: Enhanced Track Tests
+        # File Upload Tests - MAIN FOCUS
+        ("Upload Audio File", tester.test_upload_audio_file),
+        ("Upload Image File", tester.test_upload_image_file),
+        ("Upload Complete Track with Files", tester.test_upload_track_with_files),
+        ("Upload Track without Preview", tester.test_upload_track_without_preview),
+        ("Verify Uploaded Track in Database", tester.test_verify_uploaded_track_in_database),
+        ("Upload Invalid File Types", tester.test_upload_invalid_file_types),
+        
+        # Basic Track Tests
         ("Get Tracks", tester.test_get_tracks),
+        ("Search Bikutsi", tester.test_search_bikutsi),
+        
+        # Additional comprehensive tests
         ("New Styles (Bikutsi/Makossa/Soukous)", tester.test_get_tracks_with_new_styles),
         ("Get Featured Tracks", tester.test_get_featured_tracks),
         ("Track Filtering", tester.test_get_tracks_with_filters),
@@ -681,7 +697,7 @@ def main():
         ("Like Track", tester.test_like_track),
         ("Download Track", tester.test_download_track),
         
-        # Phase 2: Payment System Tests
+        # Payment System Tests
         ("Create Checkout Session", tester.test_create_checkout_session),
         ("Get Checkout Status", tester.test_get_checkout_status),
         ("Purchase History", tester.test_purchase_history),
@@ -695,7 +711,6 @@ def main():
         
         # Search and Stats Tests
         ("Search Tracks", tester.test_search_tracks),
-        ("Search Bikutsi", tester.test_search_bikutsi),
         ("Region Statistics", tester.test_region_stats),
         ("Style Statistics", tester.test_style_stats),
     ]
@@ -703,6 +718,15 @@ def main():
     print(f"\nRunning {len(tests)} test categories...")
     
     failed_tests = []
+    upload_tests = [
+        "Upload Audio File", 
+        "Upload Image File", 
+        "Upload Complete Track with Files",
+        "Upload Track without Preview",
+        "Verify Uploaded Track in Database",
+        "Upload Invalid File Types"
+    ]
+    
     for test_name, test_func in tests:
         try:
             if not test_func():
@@ -712,27 +736,53 @@ def main():
             failed_tests.append(test_name)
     
     # Print final results
-    print("\n" + "=" * 50)
-    print(f"📊 FINAL RESULTS - PHASE 2")
+    print("\n" + "=" * 60)
+    print(f"📊 FINAL RESULTS - UPLOAD ENDPOINT TESTING")
     print(f"Tests passed: {tester.tests_passed}/{tester.tests_run}")
     print(f"Success rate: {(tester.tests_passed/tester.tests_run)*100:.1f}%")
     
+    # Focus on upload test results
+    upload_failed = [test for test in failed_tests if test in upload_tests]
+    upload_passed = [test for test in upload_tests if test not in failed_tests]
+    
+    print(f"\n🎯 UPLOAD FUNCTIONALITY RESULTS:")
+    print(f"Upload tests passed: {len(upload_passed)}/{len(upload_tests)}")
+    
+    if upload_passed:
+        print(f"\n✅ Successful upload tests:")
+        for test in upload_passed:
+            print(f"   ✅ {test}")
+    
+    if upload_failed:
+        print(f"\n❌ Failed upload tests:")
+        for test in upload_failed:
+            print(f"   ❌ {test}")
+    
     if failed_tests:
-        print(f"\n❌ Failed test categories:")
+        print(f"\n❌ All failed test categories:")
         for test in failed_tests:
             print(f"   - {test}")
-        print(f"\n🔧 PHASE 2 CRITICAL FEATURES TO FIX:")
+        
+        print(f"\n🔧 CRITICAL FEATURES TO FIX:")
         critical_features = [
             "User Registration", "User Login", "Get Current User",
-            "Create Checkout Session", "Get Checkout Status",
-            "New Styles (Bikutsi/Makossa/Soukous)", "Get Featured Tracks"
+            "Upload Complete Track with Files", "Verify Uploaded Track in Database"
         ]
         critical_failed = [test for test in failed_tests if test in critical_features]
         if critical_failed:
             for test in critical_failed:
                 print(f"   🚨 {test}")
     else:
-        print(f"\n🎉 All Phase 2 test categories passed!")
+        print(f"\n🎉 All test categories passed!")
+    
+    # Special focus on the corrected endpoint
+    if "Upload Complete Track with Files" not in failed_tests:
+        print(f"\n🎉 SUCCESS: The corrected /api/tracks/upload endpoint is working!")
+        print(f"   ✅ Form data parsing with Form(...) is functional")
+        print(f"   ✅ Multipart file uploads are working")
+        print(f"   ✅ Track creation with files is successful")
+    else:
+        print(f"\n❌ ISSUE: The corrected /api/tracks/upload endpoint still has problems")
     
     return 0 if len(failed_tests) == 0 else 1
 

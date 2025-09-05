@@ -430,6 +430,12 @@ def prepare_from_mongo(item):
         for key, value in item.items():
             if hasattr(value, '__str__') and 'ObjectId' in str(type(value)):
                 item[key] = str(value)
+            elif isinstance(value, dict):
+                # Recursively process nested dictionaries
+                item[key] = prepare_from_mongo(value)
+            elif isinstance(value, list):
+                # Process lists that might contain dictionaries
+                item[key] = [prepare_from_mongo(v) if isinstance(v, dict) else v for v in value]
     return item
 
 def verify_password(plain_password, hashed_password):

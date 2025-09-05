@@ -11,6 +11,7 @@ import SubscriptionPage from "./pages/SubscriptionPage";
 import MarketplacePage from "./pages/MarketplacePage";
 import AIPage from "./pages/AIPage";
 import SongDemo from "./pages/SongDemo";
+import SolidarityPage from "./pages/SolidarityPage";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;

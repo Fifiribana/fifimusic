@@ -1529,6 +1529,8 @@ function App() {
                   <Route path="/simon-messela" element={<SimonMesselaPage />} />
                   <Route path="/admin" element={<AdminPage />} />
                   <Route path="/community" element={<CommunityPage />} />
+                  <Route path="/marketplace" element={<MarketplacePage />} />
+                  <Route path="/subscriptions" element={<SubscriptionPage />} />
                   <Route path="/success" element={<SuccessPage />} />
                   <Route path="/cancel" element={<Navigate to="/" />} />
                 </Routes>

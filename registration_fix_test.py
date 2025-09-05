@@ -91,7 +91,7 @@ class RegistrationFixTester:
             return False
             
         login_data = {
-            "email": "nouveau_utilisateur_test@usexplo.com",
+            "email": self.user_data['email'],
             "password": "MonMotDePasse2025!"
         }
         

@@ -16,7 +16,12 @@ class RegistrationFixTester:
 
     def run_test(self, name, method, endpoint, expected_status, data=None, params=None, auth_required=False):
         """Run a single API test"""
-        url = f"{self.base_url}/{endpoint}" if endpoint else self.base_url
+        if endpoint == "/":
+            url = self.base_url + "/"
+        elif endpoint:
+            url = f"{self.base_url}/{endpoint}"
+        else:
+            url = self.base_url
         headers = {'Content-Type': 'application/json'}
         
         # Add auth header if required and available

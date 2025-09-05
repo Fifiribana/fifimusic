@@ -320,6 +320,88 @@ const AIPage = ({ user, authToken }) => {
             </div>
           </div>
         </div>
+        )}
+
+        {/* Automation Tab */}
+        {activeTab === "automation" && (
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <div className="flex items-center space-x-3 mb-6">
+              <Zap className="w-6 h-6 text-blue-600" />
+              <h2 className="text-2xl font-bold text-gray-900">Automatisation</h2>
+            </div>
+
+            <div className="space-y-4 mb-6">
+              <button
+                onClick={() => createAutomationTask("recommendation", "Recommandations quotidiennes", "Générer des recommandations musicales personnalisées chaque jour")}
+                className="w-full bg-blue-50 border border-blue-200 rounded-lg p-4 hover:bg-blue-100 transition-colors text-left"
+              >
+                <div className="flex items-center space-x-3">
+                  <TrendingUp className="w-5 h-5 text-blue-600" />
+                  <div>
+                    <h3 className="font-medium text-blue-900">Recommandations automatiques</h3>
+                    <p className="text-sm text-blue-700">Découvrez de nouvelles musiques chaque jour</p>
+                  </div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => createAutomationTask("playlist_update", "Mise à jour playlists", "Mettre à jour automatiquement vos playlists avec de nouveaux morceaux")}
+                className="w-full bg-green-50 border border-green-200 rounded-lg p-4 hover:bg-green-100 transition-colors text-left"
+              >
+                <div className="flex items-center space-x-3">
+                  <Music className="w-5 h-5 text-green-600" />
+                  <div>
+                    <h3 className="font-medium text-green-900">Playlists intelligentes</h3>
+                    <p className="text-sm text-green-700">Playlists qui évoluent avec vos goûts</p>
+                  </div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => createAutomationTask("notification", "Alertes personnalisées", "Recevoir des notifications sur les nouveautés qui vous intéressent")}
+                className="w-full bg-orange-50 border border-orange-200 rounded-lg p-4 hover:bg-orange-100 transition-colors text-left"
+              >
+                <div className="flex items-center space-x-3">
+                  <Users className="w-5 h-5 text-orange-600" />
+                  <div>
+                    <h3 className="font-medium text-orange-900">Notifications intelligentes</h3>
+                    <p className="text-sm text-orange-700">Restez informé des nouveautés pertinentes</p>
+                  </div>
+                </div>
+              </button>
+            </div>
+
+            {/* Active Tasks */}
+            <div className="border-t pt-6">
+              <h3 className="font-semibold text-gray-900 mb-4">Tâches actives</h3>
+              <div className="space-y-3">
+                {automationTasks.length === 0 ? (
+                  <p className="text-gray-500 text-sm">Aucune tâche d'automatisation configurée</p>
+                ) : (
+                  automationTasks.map((task) => (
+                    <div key={task.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div>
+                        <h4 className="font-medium text-gray-900">{task.task_name}</h4>
+                        <p className="text-sm text-gray-600">{task.description}</p>
+                        <p className="text-xs text-gray-500">Fréquence: {task.schedule}</p>
+                      </div>
+                      <button
+                        onClick={() => toggleTask(task.id)}
+                        className={`px-3 py-1 rounded-full text-xs font-medium ${
+                          task.is_active
+                            ? "bg-green-100 text-green-800"
+                            : "bg-gray-100 text-gray-800"
+                        }`}
+                      >
+                        {task.is_active ? "Actif" : "Inactif"}
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* AI Features Overview */}
         <div className="mt-8 bg-white rounded-lg shadow-lg p-6">

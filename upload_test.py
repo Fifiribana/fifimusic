@@ -141,15 +141,45 @@ class USExploUploadTester:
                 'image_file': ('test_cover.png', io.BytesIO(image_data), 'image/png')
             }
             
-            headers = {'Authorization': f'Bearer {self.auth_token}'}
+            headers = {
+                'Authorization': f'Bearer {self.auth_token}',
+                'Content-Type': 'application/json'
+            }
             
-            # Send as multipart form with JSON data
-            response = requests.post(
-                f"{self.base_url}/tracks/upload", 
-                files=files, 
-                data={'track_data': json.dumps(track_data)},
-                headers=headers
-            )
+            # Try sending as multipart with JSON body - this is complex in requests
+            # Let's use a different approach - send JSON and files separately
+            
+            # First approach: try with requests-toolbelt for multipart encoder
+            try:
+                from requests_toolbelt.multipart.encoder import MultipartEncoder
+                
+                multipart_data = MultipartEncoder(
+                    fields={
+                        'track_data': json.dumps(track_data),
+                        'audio_file': ('test_track.wav', io.BytesIO(audio_data), 'audio/wav'),
+                        'image_file': ('test_cover.png', io.BytesIO(image_data), 'image/png')
+                    }
+                )
+                
+                headers = {
+                    'Authorization': f'Bearer {self.auth_token}',
+                    'Content-Type': multipart_data.content_type
+                }
+                
+                response = requests.post(
+                    f"{self.base_url}/tracks/upload", 
+                    data=multipart_data,
+                    headers=headers
+                )
+                
+            except ImportError:
+                # Fallback: use standard requests multipart
+                response = requests.post(
+                    f"{self.base_url}/tracks/upload", 
+                    files=files,
+                    json=track_data,
+                    headers={'Authorization': f'Bearer {self.auth_token}'}
+                )
             
             if response.status_code == 200:
                 track = response.json()

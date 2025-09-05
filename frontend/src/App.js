@@ -6,6 +6,8 @@ import { Search, Globe, Music, Users, ShoppingCart, User, Menu, X, Play, Pause, 
 import { ToastProvider, useToast } from "./components/Toast";
 import AdminPage from "./pages/AdminPage";
 import CommunityPage from "./pages/CommunityPage";
+import SubscriptionPage from "./pages/SubscriptionPage";
+import MarketplacePage from "./pages/MarketplacePage";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;

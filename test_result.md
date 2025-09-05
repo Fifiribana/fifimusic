@@ -372,7 +372,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Système d'upload de fichiers"
+    - "Communauté de musiciens complète"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"

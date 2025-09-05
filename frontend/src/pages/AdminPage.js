@@ -55,6 +55,23 @@ const AdminPage = () => {
   const [imagePreview, setImagePreview] = useState(null);
 
   useEffect(() => {
+    // Verify token and get user info
+    if (token) {
+      axios.get(`${API}/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      .then(response => {
+        setUser(response.data);
+      })
+      .catch(() => {
+        localStorage.removeItem('token');
+        setToken(null);
+        setUser(null);
+      });
+    }
+  }, [token]);
+
+  useEffect(() => {
     if (user && token) {
       fetchMyTracks();
     }

@@ -366,11 +366,11 @@ frontend:
 
   - task: "Système d'abonnements"
     implemented: true
-    working: false
+    working: true
     file: "server.py"
-    stuck_count: 1
+    stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
@@ -378,14 +378,17 @@ frontend:
       - working: false
         agent: "testing"
         comment: "❌ PROBLÈME PARTIEL: GET /api/subscriptions/plans ✅ (3 plans: Basique €9.99, Pro €24.99, Premium €49.99), POST /api/subscriptions/subscribe ✅ (création abonnement Pro réussie), MAIS GET /api/subscriptions/my-subscription ❌ (erreur 500 - problème sérialisation ObjectId dans pipeline MongoDB). Fonctionnalité critique partiellement opérationnelle."
+      - working: true
+        agent: "testing"
+        comment: "✅ PROBLÈME RÉSOLU! Tests focalisés réussis (3/3 - 100%): 1) GET /api/subscriptions/plans ✅ (3 plans disponibles: Basique €9.99, Pro €24.99, Premium €49.99) 2) POST /api/subscriptions/subscribe ✅ (souscription Pro créée avec succès, ID: 1153dfc8-8117-418c-a040-1d54ee0033c2, status: active, billing: monthly) 3) GET /api/subscriptions/my-subscription ✅ (ENDPOINT PROBLÉMATIQUE MAINTENANT FONCTIONNEL - récupération complète avec plan détaillé, can_sell_music: true). Système d'abonnements ENTIÈREMENT OPÉRATIONNEL!"
 
   - task: "Marketplace musicale"
     implemented: true
-    working: false
+    working: true
     file: "server.py"
-    stuck_count: 1
+    stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
@@ -393,14 +396,17 @@ frontend:
       - working: false
         agent: "testing"
         comment: "❌ PROBLÈMES CRITIQUES: 1) POST /api/marketplace/list ❌ (erreur 404 - vérification propriété track échoue car artist='Test Artist Phase 2' != username='testuser_xxx') 2) GET /api/marketplace/listings ✅ (0 annonces) 3) GET /api/marketplace/listings avec filtres prix ❌ (erreur 500 - MongoDB '$or array vide') 4) GET /api/marketplace/my-listings ✅. Nécessite corrections: ownership check et filtres MongoDB."
+      - working: true
+        agent: "testing"
+        comment: "✅ PROBLÈMES RÉSOLUS! Tests focalisés réussis (4/4 - 100%): 1) POST /api/marketplace/list ✅ (ENDPOINT PROBLÉMATIQUE MAINTENANT FONCTIONNEL - listing créé avec succès, ID: 7f2fbb23-8879-45aa-baaa-44ddf80e37d6, sale_price: €15.99, ownership check corrigé) 2) GET /api/marketplace/listings ✅ (1 listing récupéré avec détails track complets) 3) GET /api/marketplace/listings avec filtres prix ✅ (FILTRES PROBLÉMATIQUES MAINTENANT FONCTIONNELS - price_min/price_max opérationnels, 1 listing dans range 10-50€) 4) GET /api/marketplace/my-listings ✅ (listings utilisateur récupérés). Marketplace musicale ENTIÈREMENT OPÉRATIONNELLE!"
 
   - task: "Groupes communautaires"
     implemented: true
-    working: false
+    working: true
     file: "server.py"
-    stuck_count: 1
+    stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
@@ -408,6 +414,9 @@ frontend:
       - working: false
         agent: "testing"
         comment: "❌ PROBLÈME PARTIEL: 1) POST /api/community/groups ✅ (groupe 'Musiciens Bikutsi' créé) 2) GET /api/community/groups ✅ (avec/sans filtres) 3) POST /api/community/groups/{id}/join ✅ (adhésion réussie) 4) POST /api/community/groups/{id}/messages ✅ (envoi messages) 5) GET /api/community/groups/{id}/messages ❌ (erreur 403 'Not authenticated' - problème vérification membership). Fonctionnalité majoritairement opérationnelle sauf récupération messages."
+      - working: true
+        agent: "testing"
+        comment: "✅ PROBLÈME RÉSOLU! Tests focalisés réussis (6/6 - 100%): 1) POST /api/community/groups ✅ (groupe 'Musiciens Bikutsi Test' créé, ID: 81aeb9d6-7fbf-44ab-9ee0-ec517ba073a2) 2) GET /api/community/groups ✅ (1 groupe récupéré avec member_count) 3) POST /api/community/groups/{id}/join ✅ (adhésion second utilisateur réussie) 4) POST /api/community/groups/{id}/messages ✅ (2 messages envoyés par différents utilisateurs) 5) GET /api/community/groups/{id}/messages ✅ (ENDPOINT PROBLÉMATIQUE MAINTENANT FONCTIONNEL - 2 messages récupérés avec détails sender, vérification membership corrigée). Groupes communautaires ENTIÈREMENT OPÉRATIONNELS!"
 
 metadata:
   created_by: "main_agent"

@@ -5,6 +5,7 @@ import axios from "axios";
 import { Search, Globe, Music, Users, ShoppingCart, User, Menu, X, Play, Pause, Volume2, Heart, Download, CreditCard, LogIn, UserPlus, LogOut, Star, Headphones, MapPin, Settings } from "lucide-react";
 import { ToastProvider, useToast } from "./components/Toast";
 import AdminPage from "./pages/AdminPage";
+import CommunityPage from "./pages/CommunityPage";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;

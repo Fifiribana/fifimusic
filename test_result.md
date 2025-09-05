@@ -331,15 +331,32 @@ frontend:
         agent: "testing"
         comment: "✅ TESTÉ - PWA parfaitement configuré avec manifest.json complet, Service Worker enregistré avec succès, design responsive mobile/desktop, raccourcis PWA (Explorer, Simon Messela, Collections), thème Neo-Ethnic adaptatif."
 
+  - task: "Système d'upload de fichiers"
+    implemented: true
+    working: false
+    file: "server.py"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Endpoints d'upload de fichiers audio et image implémentés"
+      - working: false
+        agent: "testing"
+        comment: "❌ PROBLÈME ARCHITECTURAL CRITIQUE: Les uploads individuels (/api/upload/audio, /api/upload/image) fonctionnent PARFAITEMENT (✅ 6/7 tests réussis). MAIS l'endpoint /api/tracks/upload a un DÉFAUT DE CONCEPTION - il mélange incorrectement les modèles Pydantic avec les uploads de fichiers. FastAPI ne peut pas gérer 'track_data: TrackUploadRequest' avec File uploads dans le même endpoint. Nécessite refactoring architectural: 1) Utiliser Form fields au lieu du modèle Pydantic, ou 2) Séparer en deux endpoints."
+
 metadata:
   created_by: "main_agent"
   version: "2.0"
-  test_sequence: 2
+  test_sequence: 3
   run_ui: false
 
 test_plan:
-  current_focus: []
-  stuck_tasks: []
+  current_focus:
+    - "Système d'upload de fichiers"
+  stuck_tasks:
+    - "Upload complet de pistes avec fichiers"
   test_all: false
   test_priority: "high_first"
 
@@ -350,3 +367,5 @@ agent_communication:
     message: "✅ BACKEND TESTÉ AVEC SUCCÈS (30/32 tests - 93.8%) - Tous endpoints critiques fonctionnels: API Status, Auth JWT, Tracks avec filtres, Search bikutsi (3 résultats), Collections featured, Stats régions/styles, Données 15+ pistes mondiales. Seul Stripe checkout échoue avec clé demo (attendu). Backend prêt pour production avec vraie clé Stripe."
   - agent: "testing"
     message: "🎉 FRONTEND TESTÉ AVEC SUCCÈS COMPLET! US EXPLO est une plateforme musicale MAGNIFIQUE avec design Neo-Ethnic professionnel. ✅ Hero section spectaculaire avec instruments musicaux ✅ Navigation moderne fonctionnelle ✅ Carte interactive mondiale opérationnelle ✅ TrackCards avec hover effects et animations ✅ Lecteur audio intégré ✅ Système de panier/checkout ✅ Recherche avancée avec glass morphism ✅ Notifications toast ✅ PWA optimisé ✅ Responsive mobile/desktop ✅ Service Worker enregistré ✅ API backend connecté ✅ Aucune erreur JavaScript. PRÊT POUR PRODUCTION!"
+  - agent: "testing"
+    message: "🎵 TESTS D'UPLOAD TERMINÉS: Authentification utilisateur ✅, Upload audio individuel ✅, Upload image individuel ✅, Récupération pistes ✅, Validation types fichiers ✅, Sécurité auth ✅. PROBLÈME CRITIQUE: L'endpoint /tracks/upload a un défaut architectural FastAPI - mélange Pydantic + Files impossible. Nécessite refactoring urgent pour fonctionnalité upload complète."

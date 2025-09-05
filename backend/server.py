@@ -163,6 +163,125 @@ class MessageCreate(BaseModel):
     subject: Optional[str] = None
     content: str
 
+# Subscription System Models
+class SubscriptionPlan(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str  # Basic, Pro, Premium
+    description: str
+    price_monthly: float
+    price_yearly: float
+    features: List[str] = []
+    max_uploads_per_month: int = 5
+    max_groups: int = 3
+    can_sell_music: bool = False
+    can_create_events: bool = False
+    priority_support: bool = False
+    analytics_access: bool = False
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    is_active: bool = True
+
+class UserSubscription(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    plan_id: str
+    stripe_subscription_id: Optional[str] = None
+    status: str = "active"  # active, canceled, past_due, unpaid
+    billing_cycle: str = "monthly"  # monthly, yearly
+    current_period_start: datetime
+    current_period_end: datetime
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+# Music Marketplace Models
+class MusicListing(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    seller_id: str  # user_id of the seller
+    track_id: str
+    listing_type: str = "sale"  # sale, license, both
+    sale_price: Optional[float] = None
+    license_price: Optional[float] = None
+    license_terms: Optional[str] = None  # commercial, non-commercial, etc.
+    royalty_percentage: float = 0.0  # for ongoing royalties
+    is_exclusive: bool = False
+    status: str = "active"  # active, sold, suspended
+    commission_rate: float = 0.15  # US EXPLO commission (15%)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class MusicSale(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    listing_id: str
+    buyer_id: str
+    seller_id: str
+    sale_type: str  # purchase, license
+    amount: float
+    commission_amount: float
+    seller_earnings: float
+    stripe_payment_intent_id: Optional[str] = None
+    status: str = "pending"  # pending, completed, refunded
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+# Community Groups Models
+class CommunityGroup(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    description: Optional[str] = None
+    group_type: str = "public"  # public, private, family, friends
+    admin_id: str  # creator/admin user_id
+    max_members: int = 50
+    tags: List[str] = []
+    group_image: Optional[str] = None
+    is_active: bool = True
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class GroupMember(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    group_id: str
+    user_id: str
+    role: str = "member"  # admin, moderator, member
+    joined_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    is_active: bool = True
+
+class GroupMessage(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    group_id: str
+    sender_id: str
+    content: str
+    message_type: str = "text"  # text, image, audio, file
+    media_url: Optional[str] = None
+    reply_to_message_id: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    edited_at: Optional[datetime] = None
+    is_deleted: bool = False
+
+# Request/Response Models for new features
+class SubscriptionCreateRequest(BaseModel):
+    plan_id: str
+    billing_cycle: str = "monthly"
+
+class MusicListingCreate(BaseModel):
+    track_id: str
+    listing_type: str = "sale"
+    sale_price: Optional[float] = None
+    license_price: Optional[float] = None
+    license_terms: Optional[str] = None
+    royalty_percentage: float = 0.0
+    is_exclusive: bool = False
+
+class GroupCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    group_type: str = "public"
+    max_members: int = 50
+    tags: List[str] = []
+
+class GroupMessageCreate(BaseModel):
+    content: str
+    message_type: str = "text"
+    media_url: Optional[str] = None
+    reply_to_message_id: Optional[str] = None
+
 class Token(BaseModel):
     access_token: str
     token_type: str

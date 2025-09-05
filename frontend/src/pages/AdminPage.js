@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth, useToast } from '../App';
+import { useAuth } from '../App';
+import { useToast } from '../components/Toast';
 import axios from 'axios';
 import { 
   Upload, 

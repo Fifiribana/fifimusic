@@ -333,9 +333,9 @@ frontend:
 
   - task: "Système d'upload de fichiers"
     implemented: true
-    working: false
+    working: true
     file: "server.py"
-    stuck_count: 1
+    stuck_count: 0
     priority: "high"
     needs_retesting: false
     status_history:
@@ -345,6 +345,9 @@ frontend:
       - working: false
         agent: "testing"
         comment: "❌ PROBLÈME ARCHITECTURAL CRITIQUE: Les uploads individuels (/api/upload/audio, /api/upload/image) fonctionnent PARFAITEMENT (✅ 6/7 tests réussis). MAIS l'endpoint /api/tracks/upload a un DÉFAUT DE CONCEPTION - il mélange incorrectement les modèles Pydantic avec les uploads de fichiers. FastAPI ne peut pas gérer 'track_data: TrackUploadRequest' avec File uploads dans le même endpoint. Nécessite refactoring architectural: 1) Utiliser Form fields au lieu du modèle Pydantic, ou 2) Séparer en deux endpoints."
+      - working: true
+        agent: "testing"
+        comment: "✅ PROBLÈME RÉSOLU! L'endpoint /api/tracks/upload corrigé fonctionne PARFAITEMENT avec Form(...) pour chaque champ. Tests complets réussis: ✅ Upload audio individuel ✅ Upload image individuel ✅ Upload track complet avec fichiers (audio + image + preview optionnel) ✅ Vérification en base de données ✅ Validation types fichiers ✅ Gestion erreurs. Nouvel utilisateur créé (testuser_1757034991), track uploadé avec succès (ID: 398570de-9035-46f1-b82d-29a6511601eb), fichiers sauvegardés correctement. Architecture FastAPI 2025 respectée avec Form(...) au lieu de modèles Pydantic directs."
 
 metadata:
   created_by: "main_agent"

@@ -2873,6 +2873,360 @@ async def delete_song_creation(
         logger.error(f"Error deleting song creation: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to delete song")
 
+# ===== SOLIDARITY & SUPPORT ENDPOINTS =====
+
+@api_router.post("/solidarity/campaigns", response_model=MusicianCampaign)
+async def create_campaign(
+    campaign_data: CampaignCreateRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """Create a new musician support campaign"""
+    try:
+        # Calculate deadline
+        deadline = datetime.now(timezone.utc) + timedelta(days=campaign_data.deadline_days)
+        
+        campaign = MusicianCampaign(
+            creator_id=current_user.id,
+            title=campaign_data.title,
+            description=campaign_data.description,
+            project_type=campaign_data.project_type,
+            goal_amount=campaign_data.goal_amount,
+            deadline=deadline,
+            story=campaign_data.story,
+            needs=campaign_data.needs,
+            region=campaign_data.region,
+            music_style=campaign_data.music_style,
+            image_url=campaign_data.image_url,
+            video_url=campaign_data.video_url
+        )
+        
+        await db.musician_campaigns.insert_one(prepare_for_mongo(campaign.dict()))
+        return campaign
+        
+    except Exception as e:
+        logger.error(f"Error creating campaign: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to create campaign")
+
+@api_router.get("/solidarity/campaigns")
+async def get_campaigns(
+    status: str = Query("active"),
+    limit: int = Query(20, le=100),
+    featured: bool = Query(False),
+    project_type: Optional[str] = Query(None),
+    region: Optional[str] = Query(None)
+):
+    """Get musician campaigns with filters"""
+    try:
+        filter_query = {"status": status}
+        
+        if featured:
+            filter_query["featured"] = True
+        if project_type:
+            filter_query["project_type"] = project_type
+        if region and region != "all":
+            filter_query["region"] = region
+            
+        campaigns = await db.musician_campaigns.find(filter_query).sort("created_at", -1).limit(limit).to_list(limit)
+        
+        # Add donation stats for each campaign
+        for campaign in campaigns:
+            donations = await db.donations.find({
+                "campaign_id": campaign["id"],
+                "payment_status": "completed"
+            }).to_list(1000)
+            
+            total_amount = sum(d.get("amount", 0) for d in donations)
+            campaign["current_amount"] = total_amount
+            campaign["donors_count"] = len(donations)
+            campaign["progress_percentage"] = min(100, (total_amount / campaign["goal_amount"]) * 100) if campaign["goal_amount"] > 0 else 0
+        
+        return [prepare_from_mongo(campaign) for campaign in campaigns]
+        
+    except Exception as e:
+        logger.error(f"Error getting campaigns: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get campaigns")
+
+@api_router.get("/solidarity/campaigns/{campaign_id}")
+async def get_campaign_details(campaign_id: str):
+    """Get detailed campaign information"""
+    try:
+        campaign = await db.musician_campaigns.find_one({"id": campaign_id})
+        if not campaign:
+            raise HTTPException(status_code=404, detail="Campaign not found")
+        
+        # Get donations for this campaign
+        donations = await db.donations.find({
+            "campaign_id": campaign_id,
+            "payment_status": "completed"
+        }).sort("created_at", -1).to_list(100)
+        
+        # Calculate stats
+        total_amount = sum(d.get("amount", 0) for d in donations)
+        campaign["current_amount"] = total_amount
+        campaign["donors_count"] = len(donations)
+        campaign["progress_percentage"] = min(100, (total_amount / campaign["goal_amount"]) * 100) if campaign["goal_amount"] > 0 else 0
+        
+        # Get recent donations (non-anonymous)
+        recent_donations = [
+            {
+                "donor_name": d.get("donor_name", "Anonyme"),
+                "amount": d.get("amount", 0),
+                "message": d.get("message"),
+                "created_at": d.get("created_at")
+            }
+            for d in donations[:10] if not d.get("is_anonymous", False)
+        ]
+        
+        campaign["recent_donations"] = recent_donations
+        
+        return prepare_from_mongo(campaign)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting campaign details: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get campaign details")
+
+@api_router.post("/solidarity/donate")
+async def make_donation(
+    donation_data: DonationCreateRequest,
+    current_user: Optional[User] = Depends(get_current_user_optional)
+):
+    """Make a donation to a campaign"""
+    try:
+        # Verify campaign exists
+        campaign = await db.musician_campaigns.find_one({"id": donation_data.campaign_id})
+        if not campaign:
+            raise HTTPException(status_code=404, detail="Campaign not found")
+        
+        if campaign["status"] != "active":
+            raise HTTPException(status_code=400, detail="Campaign is not active")
+        
+        # Create donation record
+        donation = Donation(
+            campaign_id=donation_data.campaign_id,
+            donor_id=current_user.id if current_user else None,
+            donor_name=donation_data.donor_name,
+            amount=donation_data.amount,
+            message=donation_data.message,
+            is_anonymous=donation_data.is_anonymous,
+            payment_status="completed"  # Simplified for MVP - in production integrate with payment gateway
+        )
+        
+        await db.donations.insert_one(prepare_for_mongo(donation.dict()))
+        
+        # Update campaign current amount
+        total_donations = await db.donations.find({
+            "campaign_id": donation_data.campaign_id,
+            "payment_status": "completed"
+        }).to_list(1000)
+        
+        new_total = sum(d.get("amount", 0) for d in total_donations)
+        
+        await db.musician_campaigns.update_one(
+            {"id": donation_data.campaign_id},
+            {
+                "$set": {
+                    "current_amount": new_total,
+                    "updated_at": datetime.now(timezone.utc)
+                }
+            }
+        )
+        
+        return {"message": "Donation successful", "donation_id": donation.id, "new_total": new_total}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error making donation: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to process donation")
+
+@api_router.get("/solidarity/my-campaigns")
+async def get_my_campaigns(
+    current_user: User = Depends(get_current_user)
+):
+    """Get current user's campaigns"""
+    try:
+        campaigns = await db.musician_campaigns.find({
+            "creator_id": current_user.id
+        }).sort("created_at", -1).to_list(100)
+        
+        # Add stats for each campaign
+        for campaign in campaigns:
+            donations = await db.donations.find({
+                "campaign_id": campaign["id"],
+                "payment_status": "completed"
+            }).to_list(1000)
+            
+            total_amount = sum(d.get("amount", 0) for d in donations)
+            campaign["current_amount"] = total_amount
+            campaign["donors_count"] = len(donations)
+        
+        return [prepare_from_mongo(campaign) for campaign in campaigns]
+        
+    except Exception as e:
+        logger.error(f"Error getting user campaigns: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get campaigns")
+
+# ===== SUPPORT & ADVICE ENDPOINTS =====
+
+@api_router.post("/solidarity/advice", response_model=SupportAdvice)
+async def create_advice(
+    advice_data: AdviceCreateRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """Create a support advice post"""
+    try:
+        advice = SupportAdvice(
+            advisor_id=current_user.id,
+            category=advice_data.category,
+            title=advice_data.title,
+            content=advice_data.content,
+            advice_type=advice_data.advice_type,
+            target_audience=advice_data.target_audience,
+            tags=advice_data.tags
+        )
+        
+        await db.support_advice.insert_one(prepare_for_mongo(advice.dict()))
+        return advice
+        
+    except Exception as e:
+        logger.error(f"Error creating advice: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to create advice")
+
+@api_router.get("/solidarity/advice")
+async def get_advice(
+    category: Optional[str] = Query(None),
+    target_audience: str = Query("all"),
+    featured: bool = Query(False),
+    limit: int = Query(20, le=100)
+):
+    """Get support advice with filters"""
+    try:
+        filter_query = {}
+        
+        if category:
+            filter_query["category"] = category
+        if target_audience != "all":
+            filter_query["target_audience"] = {"$in": [target_audience, "all"]}
+        if featured:
+            filter_query["is_featured"] = True
+            
+        advice_list = await db.support_advice.find(filter_query).sort("created_at", -1).limit(limit).to_list(limit)
+        
+        # Add advisor info
+        for advice in advice_list:
+            advisor = await db.users.find_one({"id": advice["advisor_id"]})
+            if advisor:
+                advice["advisor_name"] = advisor.get("username", "Anonyme")
+            else:
+                advice["advisor_name"] = "Anonyme"
+        
+        return [prepare_from_mongo(advice) for advice in advice_list]
+        
+    except Exception as e:
+        logger.error(f"Error getting advice: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get advice")
+
+@api_router.post("/solidarity/support-request", response_model=SupportRequest)
+async def create_support_request(
+    request_data: SupportRequestCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Create a support request"""
+    try:
+        support_request = SupportRequest(
+            requester_id=current_user.id,
+            category=request_data.category,
+            title=request_data.title,
+            description=request_data.description,
+            urgency=request_data.urgency
+        )
+        
+        await db.support_requests.insert_one(prepare_for_mongo(support_request.dict()))
+        return support_request
+        
+    except Exception as e:
+        logger.error(f"Error creating support request: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to create support request")
+
+@api_router.get("/solidarity/support-requests")
+async def get_support_requests(
+    category: Optional[str] = Query(None),
+    status: str = Query("open"),
+    urgency: Optional[str] = Query(None),
+    limit: int = Query(20, le=100)
+):
+    """Get support requests with filters"""
+    try:
+        filter_query = {"status": status}
+        
+        if category:
+            filter_query["category"] = category
+        if urgency:
+            filter_query["urgency"] = urgency
+            
+        requests = await db.support_requests.find(filter_query).sort("created_at", -1).limit(limit).to_list(limit)
+        
+        # Add requester info (anonymized)
+        for request in requests:
+            requester = await db.users.find_one({"id": request["requester_id"]})
+            if requester:
+                request["requester_name"] = requester.get("username", "Anonyme")
+            else:
+                request["requester_name"] = "Anonyme"
+        
+        return [prepare_from_mongo(request) for request in requests]
+        
+    except Exception as e:
+        logger.error(f"Error getting support requests: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get support requests")
+
+@api_router.get("/solidarity/stats")
+async def get_solidarity_stats():
+    """Get global solidarity statistics"""
+    try:
+        # Campaign stats
+        total_campaigns = await db.musician_campaigns.count_documents({})
+        active_campaigns = await db.musician_campaigns.count_documents({"status": "active"})
+        completed_campaigns = await db.musician_campaigns.count_documents({"status": "completed"})
+        
+        # Donation stats
+        all_donations = await db.donations.find({"payment_status": "completed"}).to_list(10000)
+        total_donated = sum(d.get("amount", 0) for d in all_donations)
+        total_donors = len(set(d.get("donor_id") for d in all_donations if d.get("donor_id")))
+        
+        # Advice stats
+        total_advice = await db.support_advice.count_documents({})
+        total_support_requests = await db.support_requests.count_documents({})
+        
+        # Success stories (completed campaigns)
+        success_campaigns = await db.musician_campaigns.find({
+            "status": "completed"
+        }).limit(3).to_list(3)
+        
+        return {
+            "campaigns": {
+                "total": total_campaigns,
+                "active": active_campaigns,
+                "completed": completed_campaigns
+            },
+            "donations": {
+                "total_amount": total_donated,
+                "total_donors": total_donors,
+                "total_transactions": len(all_donations)
+            },
+            "community": {
+                "total_advice": total_advice,
+                "total_support_requests": total_support_requests
+            },
+            "success_stories": [prepare_from_mongo(story) for story in success_campaigns]
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting solidarity stats: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get statistics")
+
 # Include the router in the main app
 app.include_router(api_router)
 

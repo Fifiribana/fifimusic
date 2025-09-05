@@ -358,8 +358,7 @@ metadata:
 test_plan:
   current_focus:
     - "Système d'upload de fichiers"
-  stuck_tasks:
-    - "Upload complet de pistes avec fichiers"
+  stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 

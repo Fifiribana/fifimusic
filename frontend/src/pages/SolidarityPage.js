@@ -12,7 +12,6 @@ import {
   MapPin,
   Music,
   Lightbulb,
-  Hands,
   Sparkles,
   TrendingUp,
   Award,

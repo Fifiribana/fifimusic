@@ -376,6 +376,284 @@ class USExploAPITester:
         """Test style statistics"""
         return self.run_test("Get Style Statistics", "GET", "styles/stats", 200)[0]
 
+    # ===== FILE UPLOAD TESTS =====
+    def create_test_audio_file(self):
+        """Create a temporary audio file for testing"""
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3')
+        # Create a minimal MP3-like file (just for testing, not a real MP3)
+        temp_file.write(b'ID3\x03\x00\x00\x00\x00\x00\x00\x00' + b'\x00' * 100)
+        temp_file.close()
+        return temp_file.name
+
+    def create_test_image_file(self):
+        """Create a temporary image file for testing"""
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.jpg')
+        # Create a minimal JPEG-like file (just for testing, not a real JPEG)
+        temp_file.write(b'\xff\xd8\xff\xe0\x00\x10JFIF' + b'\x00' * 100 + b'\xff\xd9')
+        temp_file.close()
+        return temp_file.name
+
+    def run_upload_test(self, name, endpoint, files, data=None, expected_status=200, auth_required=True):
+        """Run a file upload test"""
+        url = f"{self.base_url}/{endpoint}"
+        headers = {}
+        
+        # Add auth header if required and available
+        if auth_required and self.auth_token:
+            headers['Authorization'] = f'Bearer {self.auth_token}'
+
+        self.tests_run += 1
+        print(f"\n🔍 Testing {name}...")
+        print(f"   URL: {url}")
+        
+        try:
+            response = requests.post(url, files=files, data=data, headers=headers)
+            
+            success = response.status_code == expected_status
+            if success:
+                self.tests_passed += 1
+                print(f"✅ Passed - Status: {response.status_code}")
+                try:
+                    response_data = response.json()
+                    print(f"   Response: {json.dumps(response_data, indent=2)[:300]}...")
+                    return True, response_data
+                except:
+                    return True, {}
+            else:
+                print(f"❌ Failed - Expected {expected_status}, got {response.status_code}")
+                try:
+                    error_data = response.json()
+                    print(f"   Error: {error_data}")
+                except:
+                    print(f"   Error: {response.text}")
+                return False, {}
+
+        except Exception as e:
+            print(f"❌ Failed - Error: {str(e)}")
+            return False, {}
+
+    def test_upload_audio_file(self):
+        """Test uploading an audio file"""
+        if not self.auth_token:
+            print("❌ No auth token available for audio upload test")
+            return False
+            
+        audio_file_path = self.create_test_audio_file()
+        
+        try:
+            with open(audio_file_path, 'rb') as f:
+                files = {'file': ('test_audio.mp3', f, 'audio/mpeg')}
+                success, response = self.run_upload_test(
+                    "Upload Audio File", 
+                    "upload/audio", 
+                    files, 
+                    auth_required=True
+                )
+            return success
+        finally:
+            # Clean up temp file
+            if os.path.exists(audio_file_path):
+                os.unlink(audio_file_path)
+
+    def test_upload_image_file(self):
+        """Test uploading an image file"""
+        if not self.auth_token:
+            print("❌ No auth token available for image upload test")
+            return False
+            
+        image_file_path = self.create_test_image_file()
+        
+        try:
+            with open(image_file_path, 'rb') as f:
+                files = {'file': ('test_image.jpg', f, 'image/jpeg')}
+                success, response = self.run_upload_test(
+                    "Upload Image File", 
+                    "upload/image", 
+                    files, 
+                    auth_required=True
+                )
+            return success
+        finally:
+            # Clean up temp file
+            if os.path.exists(image_file_path):
+                os.unlink(image_file_path)
+
+    def test_upload_track_with_files(self):
+        """Test the corrected /api/tracks/upload endpoint with Form data"""
+        if not self.auth_token:
+            print("❌ No auth token available for track upload test")
+            return False
+            
+        audio_file_path = self.create_test_audio_file()
+        image_file_path = self.create_test_image_file()
+        preview_file_path = self.create_test_audio_file()  # Create preview file
+        
+        try:
+            # Create unique track data
+            timestamp = int(time.time())
+            
+            with open(audio_file_path, 'rb') as audio_f, \
+                 open(image_file_path, 'rb') as image_f, \
+                 open(preview_file_path, 'rb') as preview_f:
+                
+                files = {
+                    'audio_file': ('test_track.mp3', audio_f, 'audio/mpeg'),
+                    'image_file': ('test_cover.jpg', image_f, 'image/jpeg'),
+                    'preview_file': ('test_preview.mp3', preview_f, 'audio/mpeg')
+                }
+                
+                # Form data for track metadata
+                form_data = {
+                    'title': f'Test Upload Track {timestamp}',
+                    'artist': 'Simon Messela (fifi Ribana)',
+                    'region': 'Afrique',
+                    'style': 'Bikutsi Moderne',
+                    'instrument': 'Balafon + Synthétiseur',
+                    'duration': '285',
+                    'bpm': '145',
+                    'mood': 'Énergique',
+                    'price': '5.99',
+                    'description': 'Test track uploaded via corrected API endpoint'
+                }
+                
+                success, response = self.run_upload_test(
+                    "Upload Complete Track with Files", 
+                    "tracks/upload", 
+                    files, 
+                    data=form_data,
+                    auth_required=True
+                )
+                
+                if success and 'id' in response:
+                    self.uploaded_track_id = response['id']
+                    print(f"   Created uploaded track ID: {self.uploaded_track_id}")
+                    print(f"   Track title: {response.get('title', 'N/A')}")
+                    print(f"   Audio URL: {response.get('audio_url', 'N/A')}")
+                    print(f"   Artwork URL: {response.get('artwork_url', 'N/A')}")
+                    print(f"   Preview URL: {response.get('preview_url', 'N/A')}")
+                
+                return success
+                
+        finally:
+            # Clean up temp files
+            for file_path in [audio_file_path, image_file_path, preview_file_path]:
+                if os.path.exists(file_path):
+                    os.unlink(file_path)
+
+    def test_upload_track_without_preview(self):
+        """Test track upload without optional preview file"""
+        if not self.auth_token:
+            print("❌ No auth token available for track upload test")
+            return False
+            
+        audio_file_path = self.create_test_audio_file()
+        image_file_path = self.create_test_image_file()
+        
+        try:
+            timestamp = int(time.time())
+            
+            with open(audio_file_path, 'rb') as audio_f, \
+                 open(image_file_path, 'rb') as image_f:
+                
+                files = {
+                    'audio_file': ('test_track_no_preview.mp3', audio_f, 'audio/mpeg'),
+                    'image_file': ('test_cover_no_preview.jpg', image_f, 'image/jpeg')
+                }
+                
+                form_data = {
+                    'title': f'Test Upload No Preview {timestamp}',
+                    'artist': 'Simon Messela (fifi Ribana)',
+                    'region': 'Global Fusion',
+                    'style': 'World Electronic',
+                    'instrument': 'Synthétiseur + Balafon',
+                    'duration': '355',
+                    'bpm': '128',
+                    'mood': 'Énergique',
+                    'price': '6.99',
+                    'description': 'Test track without preview file'
+                }
+                
+                success, response = self.run_upload_test(
+                    "Upload Track without Preview", 
+                    "tracks/upload", 
+                    files, 
+                    data=form_data,
+                    auth_required=True
+                )
+                
+                return success
+                
+        finally:
+            # Clean up temp files
+            for file_path in [audio_file_path, image_file_path]:
+                if os.path.exists(file_path):
+                    os.unlink(file_path)
+
+    def test_verify_uploaded_track_in_database(self):
+        """Verify that the uploaded track exists in the database"""
+        if not self.uploaded_track_id:
+            print("❌ No uploaded track ID available for verification")
+            return False
+        
+        success, response = self.run_test(
+            "Verify Uploaded Track in Database", 
+            "GET", 
+            f"tracks/{self.uploaded_track_id}", 
+            200
+        )
+        
+        if success:
+            print(f"   ✅ Track verified in database:")
+            print(f"   - Title: {response.get('title', 'N/A')}")
+            print(f"   - Artist: {response.get('artist', 'N/A')}")
+            print(f"   - Audio URL: {response.get('audio_url', 'N/A')}")
+            print(f"   - Artwork URL: {response.get('artwork_url', 'N/A')}")
+            print(f"   - Preview URL: {response.get('preview_url', 'N/A')}")
+        
+        return success
+
+    def test_upload_invalid_file_types(self):
+        """Test uploading invalid file types"""
+        if not self.auth_token:
+            print("❌ No auth token available for invalid file test")
+            return False
+            
+        # Create a text file to test invalid upload
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.txt')
+        temp_file.write(b'This is not an audio or image file')
+        temp_file.close()
+        
+        try:
+            with open(temp_file.name, 'rb') as f:
+                # Test invalid audio file
+                files = {'file': ('test.txt', f, 'text/plain')}
+                success1, _ = self.run_upload_test(
+                    "Upload Invalid Audio File", 
+                    "upload/audio", 
+                    files, 
+                    expected_status=400,
+                    auth_required=True
+                )
+                
+                # Reset file pointer
+                f.seek(0)
+                
+                # Test invalid image file
+                files = {'file': ('test.txt', f, 'text/plain')}
+                success2, _ = self.run_upload_test(
+                    "Upload Invalid Image File", 
+                    "upload/image", 
+                    files, 
+                    expected_status=400,
+                    auth_required=True
+                )
+            
+            return success1 and success2
+            
+        finally:
+            if os.path.exists(temp_file.name):
+                os.unlink(temp_file.name)
+
 def main():
     print("🎵 US EXPLO API Testing Suite - Phase 2")
     print("=" * 50)

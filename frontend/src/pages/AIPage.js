@@ -11,6 +11,7 @@ const AIPage = ({ user, authToken }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState("");
   const [automationTasks, setAutomationTasks] = useState([]);
+  const [activeTab, setActiveTab] = useState("recommendations");
 
   useEffect(() => {
     if (user && authToken) {

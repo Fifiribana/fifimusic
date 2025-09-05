@@ -118,9 +118,10 @@ class RegistrationFixTester:
 
     def test_validation_short_password(self):
         """Test de validation - Mot de passe trop court"""
+        timestamp = int(time.time())
         short_password_data = {
-            "email": "test_short_password@usexplo.com",
-            "username": "test_short_password",
+            "email": f"test_short_password_{timestamp}@usexplo.com",
+            "username": f"test_short_password_{timestamp}",
             "password": "123"  # Trop court
         }
         

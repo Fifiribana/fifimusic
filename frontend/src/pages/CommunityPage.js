@@ -35,6 +35,7 @@ const CommunityPage = () => {
   const [activeTab, setActiveTab] = useState('feed'); // feed, musicians, groups, messages, profile
   const [posts, setPosts] = useState([]);
   const [musicians, setMusicians] = useState([]);
+  const [groups, setGroups] = useState([]);
   const [messages, setMessages] = useState([]);
   const [myProfile, setMyProfile] = useState(null);
   

@@ -1418,6 +1418,607 @@ async def get_my_messages(
         logger.error(f"Error getting messages: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to get messages")
 
+# ===== SUBSCRIPTION SYSTEM ENDPOINTS =====
+
+@api_router.get("/subscriptions/plans")
+async def get_subscription_plans():
+    """Get all available subscription plans"""
+    try:
+        plans = await db.subscription_plans.find({"is_active": True}).to_list(100)
+        return [prepare_from_mongo(plan) for plan in plans]
+    except Exception as e:
+        logger.error(f"Error getting subscription plans: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get subscription plans")
+
+@api_router.post("/subscriptions/subscribe")
+async def create_subscription(
+    subscription_data: SubscriptionCreateRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """Create a new subscription for user"""
+    try:
+        # Check if plan exists
+        plan = await db.subscription_plans.find_one({"id": subscription_data.plan_id, "is_active": True})
+        if not plan:
+            raise HTTPException(status_code=404, detail="Subscription plan not found")
+        
+        # Check if user already has an active subscription
+        existing_sub = await db.user_subscriptions.find_one({
+            "user_id": current_user.id,
+            "status": "active"
+        })
+        
+        if existing_sub:
+            raise HTTPException(status_code=400, detail="User already has an active subscription")
+        
+        # Calculate period dates
+        start_date = datetime.now(timezone.utc)
+        if subscription_data.billing_cycle == "yearly":
+            end_date = start_date.replace(year=start_date.year + 1)
+        else:
+            # Monthly billing
+            if start_date.month == 12:
+                end_date = start_date.replace(year=start_date.year + 1, month=1)
+            else:
+                end_date = start_date.replace(month=start_date.month + 1)
+        
+        # Create subscription
+        subscription = UserSubscription(
+            user_id=current_user.id,
+            plan_id=subscription_data.plan_id,
+            billing_cycle=subscription_data.billing_cycle,
+            current_period_start=start_date,
+            current_period_end=end_date
+        )
+        
+        await db.user_subscriptions.insert_one(prepare_for_mongo(subscription.dict()))
+        return subscription
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating subscription: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to create subscription")
+
+@api_router.get("/subscriptions/my-subscription")
+async def get_user_subscription(current_user: User = Depends(get_current_user)):
+    """Get current user's subscription details"""
+    try:
+        pipeline = [
+            {"$match": {"user_id": current_user.id, "status": "active"}},
+            {
+                "$lookup": {
+                    "from": "subscription_plans",
+                    "localField": "plan_id",
+                    "foreignField": "id",
+                    "as": "plan_info"
+                }
+            },
+            {"$unwind": "$plan_info"},
+            {
+                "$project": {
+                    "id": 1,
+                    "status": 1,
+                    "billing_cycle": 1,
+                    "current_period_start": 1,
+                    "current_period_end": 1,
+                    "created_at": 1,
+                    "plan": "$plan_info"
+                }
+            }
+        ]
+        
+        subscription = await db.user_subscriptions.aggregate(pipeline).to_list(1)
+        if not subscription:
+            return None
+        
+        return prepare_from_mongo(subscription[0])
+        
+    except Exception as e:
+        logger.error(f"Error getting user subscription: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get user subscription")
+
+# ===== MUSIC MARKETPLACE ENDPOINTS =====
+
+@api_router.post("/marketplace/list", response_model=MusicListing)
+async def create_music_listing(
+    listing_data: MusicListingCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """List music for sale/license in the marketplace"""
+    try:
+        # Verify user owns the track
+        track = await db.tracks.find_one({"id": listing_data.track_id, "artist": current_user.username})
+        if not track:
+            raise HTTPException(status_code=404, detail="Track not found or not owned by user")
+        
+        # Check if track is already listed
+        existing_listing = await db.music_listings.find_one({
+            "track_id": listing_data.track_id,
+            "seller_id": current_user.id,
+            "status": "active"
+        })
+        
+        if existing_listing:
+            raise HTTPException(status_code=400, detail="Track is already listed in marketplace")
+        
+        # Check user subscription for selling privileges
+        user_subscription = await db.user_subscriptions.find_one({
+            "user_id": current_user.id,
+            "status": "active"
+        })
+        
+        if user_subscription:
+            plan = await db.subscription_plans.find_one({"id": user_subscription["plan_id"]})
+            if not plan or not plan.get("can_sell_music", False):
+                raise HTTPException(status_code=403, detail="Subscription plan does not allow selling music")
+        else:
+            raise HTTPException(status_code=403, detail="Active subscription required to sell music")
+        
+        # Create listing
+        listing = MusicListing(
+            seller_id=current_user.id,
+            **listing_data.dict()
+        )
+        
+        await db.music_listings.insert_one(prepare_for_mongo(listing.dict()))
+        return listing
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating music listing: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to create music listing")
+
+@api_router.get("/marketplace/listings")
+async def get_marketplace_listings(
+    genre: Optional[str] = None,
+    price_min: Optional[float] = None,
+    price_max: Optional[float] = None,
+    listing_type: Optional[str] = None,
+    limit: int = Query(20, le=100),
+    skip: int = Query(0, ge=0)
+):
+    """Get marketplace listings with filters"""
+    try:
+        pipeline = []
+        
+        # Build match stage
+        match_conditions = {"status": "active"}
+        
+        if listing_type:
+            match_conditions["listing_type"] = {"$in": [listing_type, "both"]}
+        
+        pipeline.append({"$match": match_conditions})
+        
+        # Join with tracks and users
+        pipeline.extend([
+            {
+                "$lookup": {
+                    "from": "tracks",
+                    "localField": "track_id",
+                    "foreignField": "id",
+                    "as": "track_info"
+                }
+            },
+            {"$unwind": "$track_info"},
+            {
+                "$lookup": {
+                    "from": "users",
+                    "localField": "seller_id",
+                    "foreignField": "id",
+                    "as": "seller_info"
+                }
+            },
+            {"$unwind": "$seller_info"},
+            {
+                "$lookup": {
+                    "from": "musician_profiles",
+                    "localField": "seller_id",
+                    "foreignField": "user_id",
+                    "as": "musician_info"
+                }
+            }
+        ])
+        
+        # Add genre filter after joining with tracks
+        additional_match = {}
+        if genre:
+            additional_match["track_info.style"] = {"$regex": genre, "$options": "i"}
+        if price_min or price_max:
+            price_conditions = {}
+            if price_min:
+                price_conditions["$gte"] = price_min
+            if price_max:
+                price_conditions["$lte"] = price_max
+            additional_match["$or"] = []
+            if "sale_price" in [listing_type, None]:
+                additional_match["$or"].append({"sale_price": price_conditions})
+            if "license_price" in [listing_type, None]:
+                additional_match["$or"].append({"license_price": price_conditions})
+        
+        if additional_match:
+            pipeline.append({"$match": additional_match})
+        
+        # Project final structure
+        pipeline.extend([
+            {
+                "$project": {
+                    "id": 1,
+                    "listing_type": 1,
+                    "sale_price": 1,
+                    "license_price": 1,
+                    "license_terms": 1,
+                    "royalty_percentage": 1,
+                    "is_exclusive": 1,
+                    "created_at": 1,
+                    "track": {
+                        "id": "$track_info.id",
+                        "title": "$track_info.title",
+                        "style": "$track_info.style",
+                        "region": "$track_info.region",
+                        "duration": "$track_info.duration",
+                        "artwork_url": "$track_info.artwork_url",
+                        "preview_url": "$track_info.preview_url"
+                    },
+                    "seller": {
+                        "username": "$seller_info.username",
+                        "stage_name": {"$arrayElemAt": ["$musician_info.stage_name", 0]}
+                    }
+                }
+            },
+            {"$sort": {"created_at": -1}},
+            {"$skip": skip},
+            {"$limit": limit}
+        ])
+        
+        listings = await db.music_listings.aggregate(pipeline).to_list(limit)
+        return [prepare_from_mongo(listing) for listing in listings]
+        
+    except Exception as e:
+        logger.error(f"Error getting marketplace listings: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get marketplace listings")
+
+@api_router.get("/marketplace/my-listings")
+async def get_my_listings(
+    current_user: User = Depends(get_current_user),
+    limit: int = Query(20, le=100),
+    skip: int = Query(0, ge=0)
+):
+    """Get current user's marketplace listings"""
+    try:
+        pipeline = [
+            {"$match": {"seller_id": current_user.id}},
+            {
+                "$lookup": {
+                    "from": "tracks",
+                    "localField": "track_id",
+                    "foreignField": "id",
+                    "as": "track_info"
+                }
+            },
+            {"$unwind": "$track_info"},
+            {
+                "$project": {
+                    "id": 1,
+                    "listing_type": 1,
+                    "sale_price": 1,
+                    "license_price": 1,
+                    "status": 1,
+                    "created_at": 1,
+                    "track": {
+                        "id": "$track_info.id",
+                        "title": "$track_info.title",
+                        "style": "$track_info.style",
+                        "artwork_url": "$track_info.artwork_url"
+                    }
+                }
+            },
+            {"$sort": {"created_at": -1}},
+            {"$skip": skip},
+            {"$limit": limit}
+        ]
+        
+        listings = await db.music_listings.aggregate(pipeline).to_list(limit)
+        return [prepare_from_mongo(listing) for listing in listings]
+        
+    except Exception as e:
+        logger.error(f"Error getting user listings: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get user listings")
+
+# ===== COMMUNITY GROUPS ENDPOINTS =====
+
+@api_router.post("/community/groups", response_model=CommunityGroup)
+async def create_group(
+    group_data: GroupCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Create a new community group"""
+    try:
+        # Check user subscription for group creation limits
+        user_subscription = await db.user_subscriptions.find_one({
+            "user_id": current_user.id,
+            "status": "active"
+        })
+        
+        if user_subscription:
+            plan = await db.subscription_plans.find_one({"id": user_subscription["plan_id"]})
+            if plan:
+                # Check how many groups user has created
+                user_groups_count = await db.community_groups.count_documents({
+                    "admin_id": current_user.id,
+                    "is_active": True
+                })
+                
+                if user_groups_count >= plan.get("max_groups", 3):
+                    raise HTTPException(
+                        status_code=403, 
+                        detail=f"Maximum group limit reached for your plan ({plan.get('max_groups', 3)} groups)"
+                    )
+        else:
+            # Free users can create 1 group
+            user_groups_count = await db.community_groups.count_documents({
+                "admin_id": current_user.id,
+                "is_active": True
+            })
+            
+            if user_groups_count >= 1:
+                raise HTTPException(status_code=403, detail="Free users can only create 1 group. Upgrade to create more.")
+        
+        # Create group
+        group = CommunityGroup(
+            admin_id=current_user.id,
+            **group_data.dict()
+        )
+        
+        await db.community_groups.insert_one(prepare_for_mongo(group.dict()))
+        
+        # Add creator as first member with admin role
+        admin_member = GroupMember(
+            group_id=group.id,
+            user_id=current_user.id,
+            role="admin"
+        )
+        
+        await db.group_members.insert_one(prepare_for_mongo(admin_member.dict()))
+        
+        return group
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating group: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to create group")
+
+@api_router.get("/community/groups")
+async def get_groups(
+    group_type: Optional[str] = None,
+    search: Optional[str] = None,
+    limit: int = Query(20, le=100),
+    skip: int = Query(0, ge=0)
+):
+    """Get community groups with filters"""
+    try:
+        pipeline = []
+        
+        # Build match stage
+        match_conditions = {"is_active": True}
+        
+        if group_type and group_type != "all":
+            match_conditions["group_type"] = group_type
+        
+        if search:
+            match_conditions["$or"] = [
+                {"name": {"$regex": search, "$options": "i"}},
+                {"description": {"$regex": search, "$options": "i"}},
+                {"tags": {"$in": [search]}}
+            ]
+        
+        pipeline.append({"$match": match_conditions})
+        
+        # Add admin info and member count
+        pipeline.extend([
+            {
+                "$lookup": {
+                    "from": "users",
+                    "localField": "admin_id",
+                    "foreignField": "id",
+                    "as": "admin_info"
+                }
+            },
+            {"$unwind": "$admin_info"},
+            {
+                "$lookup": {
+                    "from": "group_members",
+                    "localField": "id",
+                    "foreignField": "group_id",
+                    "as": "members"
+                }
+            },
+            {
+                "$addFields": {
+                    "member_count": {"$size": "$members"}
+                }
+            },
+            {
+                "$project": {
+                    "id": 1,
+                    "name": 1,
+                    "description": 1,
+                    "group_type": 1,
+                    "max_members": 1,
+                    "tags": 1,
+                    "group_image": 1,
+                    "created_at": 1,
+                    "member_count": 1,
+                    "admin": {
+                        "username": "$admin_info.username"
+                    }
+                }
+            },
+            {"$sort": {"created_at": -1}},
+            {"$skip": skip},
+            {"$limit": limit}
+        ])
+        
+        groups = await db.community_groups.aggregate(pipeline).to_list(limit)
+        return [prepare_from_mongo(group) for group in groups]
+        
+    except Exception as e:
+        logger.error(f"Error getting groups: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get groups")
+
+@api_router.post("/community/groups/{group_id}/join")
+async def join_group(
+    group_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Join a community group"""
+    try:
+        # Check if group exists
+        group = await db.community_groups.find_one({"id": group_id, "is_active": True})
+        if not group:
+            raise HTTPException(status_code=404, detail="Group not found")
+        
+        # Check if already a member
+        existing_member = await db.group_members.find_one({
+            "group_id": group_id,
+            "user_id": current_user.id,
+            "is_active": True
+        })
+        
+        if existing_member:
+            return {"message": "Already a member of this group", "member": True}
+        
+        # Check if group is full
+        member_count = await db.group_members.count_documents({
+            "group_id": group_id,
+            "is_active": True
+        })
+        
+        if member_count >= group["max_members"]:
+            raise HTTPException(status_code=400, detail="Group is full")
+        
+        # Add as member
+        member = GroupMember(
+            group_id=group_id,
+            user_id=current_user.id
+        )
+        
+        await db.group_members.insert_one(prepare_for_mongo(member.dict()))
+        
+        return {"message": "Successfully joined the group", "member": True}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error joining group: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to join group")
+
+@api_router.get("/community/groups/{group_id}/messages")
+async def get_group_messages(
+    group_id: str,
+    current_user: User = Depends(get_current_user),
+    limit: int = Query(50, le=100),
+    skip: int = Query(0, ge=0)
+):
+    """Get messages from a group (if user is a member)"""
+    try:
+        # Verify user is a member of the group
+        member = await db.group_members.find_one({
+            "group_id": group_id,
+            "user_id": current_user.id,
+            "is_active": True
+        })
+        
+        if not member:
+            raise HTTPException(status_code=403, detail="You must be a member to view group messages")
+        
+        # Get messages with sender info
+        pipeline = [
+            {"$match": {"group_id": group_id, "is_deleted": False}},
+            {
+                "$lookup": {
+                    "from": "users",
+                    "localField": "sender_id",
+                    "foreignField": "id",
+                    "as": "sender_info"
+                }
+            },
+            {"$unwind": "$sender_info"},
+            {
+                "$lookup": {
+                    "from": "musician_profiles",
+                    "localField": "sender_id",
+                    "foreignField": "user_id",
+                    "as": "musician_info"
+                }
+            },
+            {
+                "$project": {
+                    "id": 1,
+                    "content": 1,
+                    "message_type": 1,
+                    "media_url": 1,
+                    "reply_to_message_id": 1,
+                    "created_at": 1,
+                    "edited_at": 1,
+                    "sender": {
+                        "id": "$sender_info.id",
+                        "username": "$sender_info.username",
+                        "stage_name": {"$arrayElemAt": ["$musician_info.stage_name", 0]}
+                    }
+                }
+            },
+            {"$sort": {"created_at": -1}},
+            {"$skip": skip},
+            {"$limit": limit}
+        ]
+        
+        messages = await db.group_messages.aggregate(pipeline).to_list(limit)
+        return [prepare_from_mongo(message) for message in messages]
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting group messages: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get group messages")
+
+@api_router.post("/community/groups/{group_id}/messages")
+async def send_group_message(
+    group_id: str,
+    message_data: GroupMessageCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Send a message to a group"""
+    try:
+        # Verify user is a member of the group
+        member = await db.group_members.find_one({
+            "group_id": group_id,
+            "user_id": current_user.id,
+            "is_active": True
+        })
+        
+        if not member:
+            raise HTTPException(status_code=403, detail="You must be a member to send messages")
+        
+        # Create message
+        message = GroupMessage(
+            group_id=group_id,
+            sender_id=current_user.id,
+            **message_data.dict()
+        )
+        
+        await db.group_messages.insert_one(prepare_for_mongo(message.dict()))
+        
+        return {"message": "Message sent successfully", "id": message.id}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error sending group message: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to send group message")
+
 # Include the router in the main app
 app.include_router(api_router)
 

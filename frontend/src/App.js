@@ -10,6 +10,7 @@ import CommunityPage from "./pages/CommunityPage";
 import SubscriptionPage from "./pages/SubscriptionPage";
 import MarketplacePage from "./pages/MarketplacePage";
 import AIPage from "./pages/AIPage";
+import SongDemo from "./pages/SongDemo";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;

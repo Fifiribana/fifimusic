@@ -60,7 +60,7 @@ class RegistrationFixTester:
 
     def test_api_status(self):
         """Test endpoint de base - GET /api/ pour confirmer l'API est accessible"""
-        return self.run_test("API Status Check", "GET", "", 200)
+        return self.run_test("API Status Check", "GET", "/", 200)
 
     def test_new_user_registration(self):
         """Test d'inscription basique - POST /api/auth/register avec nouvel utilisateur"""

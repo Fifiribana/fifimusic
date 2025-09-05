@@ -143,6 +143,50 @@ const AIPage = ({ user, authToken }) => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Tab Navigation */}
+        <div className="flex space-x-1 bg-white rounded-lg p-1 mb-8 shadow">
+          <button
+            onClick={() => setActiveTab("recommendations")}
+            className={`flex-1 py-3 px-6 rounded-md font-medium transition-colors flex items-center justify-center space-x-2 ${
+              activeTab === "recommendations"
+                ? "bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-md"
+                : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+            }`}
+          >
+            <TrendingUp className="w-5 h-5" />
+            <span>Recommandations</span>
+          </button>
+          <button
+            onClick={() => setActiveTab("composer")}
+            className={`flex-1 py-3 px-6 rounded-md font-medium transition-colors flex items-center justify-center space-x-2 ${
+              activeTab === "composer"
+                ? "bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-md"
+                : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+            }`}
+          >
+            <Wand2 className="w-5 h-5" />
+            <span>Compositeur IA</span>
+          </button>
+          <button
+            onClick={() => setActiveTab("automation")}
+            className={`flex-1 py-3 px-6 rounded-md font-medium transition-colors flex items-center justify-center space-x-2 ${
+              activeTab === "automation"
+                ? "bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-md"
+                : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+            }`}
+          >
+            <Zap className="w-5 h-5" />
+            <span>Automatisation</span>
+          </button>
+        </div>
+
+        {/* Composer Tab */}
+        {activeTab === "composer" && (
+          <SongCreator user={user} authToken={authToken} />
+        )}
+
+        {/* Recommendations & Automation Tab */}
+        {activeTab === "recommendations" && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* AI Recommendations */}
           <div className="bg-white rounded-lg shadow-lg p-6">

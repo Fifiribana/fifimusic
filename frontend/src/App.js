@@ -426,7 +426,12 @@ const Navigation = () => {
               <a href="/simon-messela" className="text-white hover:text-terracotta transition-colors font-semibold">
                 Simon Messela
               </a>
-              <a href="#" className="text-white hover:text-terracotta transition-colors">Artistes</a>
+              {user && (
+                <a href="/admin" className="text-gold hover:text-terracotta transition-colors flex items-center font-semibold">
+                  <Settings className="w-4 h-4 mr-1" />
+                  Mes Créations
+                </a>
+              )}
             </div>
 
             {/* Right side icons */}

@@ -499,6 +499,10 @@ const Navigation = () => {
                 <Heart className="w-4 h-4 mr-1" />
                 Solidarité
               </a>
+              <a href="/fifi-ribana-youtube" className="text-red-300 hover:text-red-100 transition-colors flex items-center font-semibold">
+                <Play className="w-4 h-4 mr-1" />
+                Fifi Ribana TV
+              </a>
               <a href="#collections" className="text-white hover:text-terracotta transition-colors">Collections</a>
               <a href="/simon-messela" className="text-white hover:text-terracotta transition-colors font-semibold">
                 Simon Messela

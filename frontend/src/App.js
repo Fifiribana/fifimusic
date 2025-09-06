@@ -1623,6 +1623,8 @@ function App() {
                   <Route path="/subscriptions" element={<SubscriptionPage />} />
                   <Route path="/ai" element={<AIPageWrapper />} />
                   <Route path="/solidarity" element={<SolidarityPageWrapper />} />
+                  <Route path="/search" element={<SearchPage />} />
+                  <Route path="/fifi-ribana-youtube" element={<FifiRibanaYouTube />} />
                   <Route path="/song-demo" element={<SongDemo />} />
                   <Route path="/success" element={<SuccessPage />} />
                   <Route path="/cancel" element={<Navigate to="/" />} />

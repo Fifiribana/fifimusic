@@ -154,14 +154,39 @@ const AudioProvider = ({ children }) => {
       audio.pause();
     }
     
-    const newAudio = new Audio(track.preview_url || track.audio_url);
+    const audioUrl = track.preview_url || track.audio_url;
+    
+    // Skip if no valid audio URL or if it's a placeholder
+    if (!audioUrl || audioUrl.includes('example.com')) {
+      console.log('⚠️ Piste audio non disponible:', track.title);
+      return;
+    }
+    
+    const newAudio = new Audio(audioUrl);
+    
+    // Add error handling for media loading
+    newAudio.addEventListener('error', (e) => {
+      console.log('❌ Erreur de chargement audio:', track.title, e);
+      setIsPlaying(false);
+    });
+    
     newAudio.addEventListener('ended', () => setIsPlaying(false));
     newAudio.addEventListener('pause', () => setIsPlaying(false));
     newAudio.addEventListener('play', () => setIsPlaying(true));
     
+    // Add loading event
+    newAudio.addEventListener('canplay', () => {
+      console.log('✅ Audio prêt:', track.title);
+    });
+    
     setAudio(newAudio);
     setCurrentTrack(track);
-    newAudio.play();
+    
+    // Try to play with error handling
+    newAudio.play().catch(error => {
+      console.log('⚠️ Impossible de lire:', track.title, error.message);
+      setIsPlaying(false);
+    });
   };
 
   const pauseTrack = () => {

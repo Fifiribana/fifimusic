@@ -498,7 +498,25 @@ const Navigation = () => {
             </div>
 
             {/* Right side icons */}
-            <div className="hidden md:flex items-center space-x-4">
+            <div className="flex items-center space-x-3">
+              {/* Search Bar - À côté du panier */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Rechercher..."
+                  className="w-48 pl-10 pr-4 py-2 bg-white/20 border-2 border-terracotta/30 rounded-lg text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-terracotta focus:border-terracotta focus:bg-white/30 transition-all text-sm"
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      const query = e.target.value;
+                      if (query.trim()) {
+                        window.location.href = `/search?q=${encodeURIComponent(query)}`;
+                      }
+                    }
+                  }}
+                />
+              </div>
+              
               <div className="relative">
                 <button className="p-2 text-white hover:text-terracotta transition-colors">
                   <ShoppingCart className="w-5 h-5" />

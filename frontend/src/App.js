@@ -12,6 +12,8 @@ import MarketplacePage from "./pages/MarketplacePage";
 import AIPage from "./pages/AIPage";
 import SongDemo from "./pages/SongDemo";
 import SolidarityPage from "./pages/SolidarityPage";
+import SearchPage from "./pages/SearchPage";
+import FifiRibanaYouTube from "./pages/FifiRibanaYouTube";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;

@@ -561,6 +561,25 @@ const Navigation = () => {
           {isMenuOpen && (
             <div className="md:hidden bg-charcoal/98 border-t border-terracotta/20">
               <div className="px-2 pt-2 pb-3 space-y-1">
+                {/* Mobile Search Bar - TRÈS VISIBLE */}
+                <div className="px-3 py-2">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <input
+                      type="text"
+                      placeholder="🔍 Rechercher artistes, chansons..."
+                      className="w-full pl-10 pr-4 py-3 bg-white border-2 border-terracotta rounded-lg text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-terracotta text-sm"
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          const query = e.target.value;
+                          if (query.trim()) {
+                            window.location.href = `/search?q=${encodeURIComponent(query)}`;
+                          }
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
                 <a href="/" className="block px-3 py-2 text-white hover:text-terracotta">Accueil</a>
                 <a href="#explorer" className="block px-3 py-2 text-white hover:text-terracotta">Explorer</a>
                 <a href="/community" className="block px-3 py-2 text-white hover:text-terracotta">Communauté</a>

@@ -2893,6 +2893,55 @@ async def delete_song_creation(
         logger.error(f"Error deleting song creation: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to delete song")
 
+# ===== SEARCH ENDPOINTS =====
+
+@api_router.get("/tracks/search")
+async def search_tracks(q: str = Query(...), limit: int = Query(20, le=100)):
+    """Search tracks by title, artist, style, or region"""
+    try:
+        search_regex = {"$regex": q, "$options": "i"}
+        
+        query = {
+            "$or": [
+                {"title": search_regex},
+                {"artist": search_regex},
+                {"style": search_regex},
+                {"region": search_regex},
+                {"description": search_regex}
+            ]
+        }
+        
+        tracks = await db.tracks.find(query).limit(limit).to_list(limit)
+        return [prepare_from_mongo(track) for track in tracks]
+        
+    except Exception as e:
+        logger.error(f"Error searching tracks: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to search tracks")
+
+@api_router.get("/community/search")
+async def search_musicians(q: str = Query(...), limit: int = Query(10, le=50)):
+    """Search musician profiles by name, bio, genre, or region"""
+    try:
+        search_regex = {"$regex": q, "$options": "i"}
+        
+        query = {
+            "$or": [
+                {"stage_name": search_regex},
+                {"bio": search_regex},
+                {"genres": {"$in": [search_regex]}},
+                {"region": search_regex},
+                {"city": search_regex},
+                {"instruments": {"$in": [search_regex]}}
+            ]
+        }
+        
+        profiles = await db.musician_profiles.find(query).limit(limit).to_list(limit)
+        return [prepare_from_mongo(profile) for profile in profiles]
+        
+    except Exception as e:
+        logger.error(f"Error searching musicians: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to search musicians")
+
 # ===== SOLIDARITY & SUPPORT ENDPOINTS =====
 
 @api_router.post("/solidarity/campaigns", response_model=MusicianCampaign)

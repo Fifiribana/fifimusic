@@ -2893,6 +2893,270 @@ async def delete_song_creation(
         logger.error(f"Error deleting song creation: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to delete song")
 
+# ===== AI UNIVERSAL SEARCH ENGINE =====
+
+from emergentintegrations.llm.chat import LlmChat, UserMessage
+
+class UniversalSearchRequest(BaseModel):
+    query: str
+    language: str = "français"
+    max_results: int = 20
+    search_context: str = "general"  # general, artist, song, style, mood
+
+async def interpret_search_query(query: str, language: str = "français", user_context: Dict = None) -> Dict:
+    """Use AI to interpret natural language search queries"""
+    try:
+        # Create system message for music search understanding
+        system_message = f"""Tu es un expert en recherche musicale mondiale, spécialisé dans les musiques africaines et la plateforme US EXPLO.
+
+MISSION: Interpréter les requêtes de recherche en langage naturel et les transformer en paramètres de recherche optimisés.
+
+CONTEXTE US EXPLO:
+- Musiques mondiales avec focus sur l'Afrique
+- Styles: Bikutsi, Makossa, Afrobeat, Soukous, Highlife, Gospel, etc.
+- Créateur: Fifi Ribana (Simon Pierre Messela)
+- Plus de 1000 œuvres dans la base
+
+RÉPONSE ATTENDUE (JSON):
+{{
+    "search_type": "type de recherche (artist, song, style, mood, cultural, era)",
+    "search_terms": ["termes optimisés pour la base de données"],
+    "filters": {{
+        "style": ["styles musicaux identifiés"],
+        "artist": ["artistes mentionnés ou similaires"],
+        "region": ["régions/pays identifiés"],
+        "mood": "humeur/ambiance",
+        "era": "période si mentionnée"
+    }},
+    "user_intent": "intention utilisateur en français",
+    "suggestions": ["3 suggestions de recherches similaires"],
+    "cultural_context": "contexte culturel africain si pertinent"
+}}
+
+EXEMPLES:
+- "musique pour danser" → style dance, mood énergique, suggestions afrobeat/bikutsi
+- "trouve Fifi Ribana" → artist Fifi Ribana, Simon Pierre Messela, guitare
+- "chanson camerounaise années 90" → region Cameroun, era 1990s, styles makossa/bikutsi
+"""
+
+        # Initialize AI chat for search interpretation
+        chat = LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            session_id=f"search_ai_{int(time.time())}",
+            system_message=system_message
+        ).with_model("openai", "gpt-4o")
+        
+        # Build user prompt with context
+        user_prompt = f"REQUÊTE: '{query}'"
+        if user_context:
+            if user_context.get("preferences"):
+                user_prompt += f"\nPRÉFÉRENCES UTILISATEUR: {', '.join(user_context['preferences'])}"
+            if user_context.get("region"):
+                user_prompt += f"\nRÉGION UTILISATEUR: {user_context['region']}"
+        
+        # Send to AI
+        user_msg = UserMessage(text=user_prompt)
+        ai_response = await chat.send_message(user_msg)
+        
+        # Try to parse JSON response
+        try:
+            import json
+            interpretation = json.loads(ai_response)
+        except json.JSONDecodeError:
+            # Fallback parsing if not JSON
+            interpretation = {
+                "search_type": "general",
+                "search_terms": query.split(),
+                "filters": {"style": [], "artist": [], "region": [], "mood": "neutral"},
+                "user_intent": f"Recherche générale pour: {query}",
+                "suggestions": [],
+                "cultural_context": ""
+            }
+        
+        return interpretation
+        
+    except Exception as e:
+        logger.error(f"Error in AI search interpretation: {str(e)}")
+        # Fallback to simple parsing
+        return {
+            "search_type": "fallback",
+            "search_terms": query.lower().split(),
+            "filters": {"style": [], "artist": [], "region": [], "mood": "neutral"},
+            "user_intent": f"Recherche simple pour: {query}",
+            "suggestions": [],
+            "cultural_context": "",
+            "fallback_used": True
+        }
+
+async def execute_ai_enhanced_search(interpretation: Dict, max_results: int = 20) -> List[Dict]:
+    """Execute database search based on AI interpretation"""
+    try:
+        query = {}
+        
+        # Build MongoDB query from AI interpretation
+        filters = interpretation.get("filters", {})
+        search_terms = interpretation.get("search_terms", [])
+        
+        # Text search on multiple fields
+        if search_terms:
+            text_conditions = []
+            for term in search_terms:
+                term_regex = {"$regex": term, "$options": "i"}
+                text_conditions.append({"title": term_regex})
+                text_conditions.append({"artist": term_regex})
+                text_conditions.append({"description": term_regex})
+                text_conditions.append({"style": term_regex})
+                text_conditions.append({"region": term_regex})
+            
+            if text_conditions:
+                query["$or"] = text_conditions
+        
+        # Apply filters
+        if filters.get("style"):
+            style_conditions = [{"style": {"$regex": style, "$options": "i"}} 
+                             for style in filters["style"]]
+            if "style_filter" not in query:
+                query["style_filter"] = {"$or": style_conditions}
+        
+        if filters.get("artist"):
+            artist_conditions = [{"artist": {"$regex": artist, "$options": "i"}} 
+                               for artist in filters["artist"]]
+            query["artist_filter"] = {"$or": artist_conditions}
+        
+        if filters.get("region"):
+            region_conditions = [{"region": {"$regex": region, "$options": "i"}} 
+                               for region in filters["region"]]
+            query["region_filter"] = {"$or": region_conditions}
+        
+        # Combine all conditions
+        final_query = {}
+        conditions = []
+        
+        if query.get("$or"):
+            conditions.append({"$or": query["$or"]})
+        if query.get("style_filter"):
+            conditions.append(query["style_filter"])
+        if query.get("artist_filter"):
+            conditions.append(query["artist_filter"])
+        if query.get("region_filter"):
+            conditions.append(query["region_filter"])
+        
+        if conditions:
+            final_query = {"$and": conditions} if len(conditions) > 1 else conditions[0]
+        
+        # Execute search
+        tracks = await db.tracks.find(final_query).limit(max_results).to_list(max_results)
+        return [prepare_from_mongo(track) for track in tracks]
+        
+    except Exception as e:
+        logger.error(f"Error in AI enhanced search: {str(e)}")
+        # Fallback to simple search
+        simple_query = {"$or": [
+            {"title": {"$regex": " ".join(interpretation.get("search_terms", [])), "$options": "i"}},
+            {"artist": {"$regex": " ".join(interpretation.get("search_terms", [])), "$options": "i"}}
+        ]}
+        tracks = await db.tracks.find(simple_query).limit(max_results).to_list(max_results)
+        return [prepare_from_mongo(track) for track in tracks]
+
+@api_router.post("/search/ai-universal")
+async def ai_universal_search(request: UniversalSearchRequest):
+    """Universal AI-powered search engine for US EXPLO"""
+    try:
+        # Get user context (optional)
+        user_context = {
+            "language": request.language,
+            "preferences": [],  # Could be enhanced with user data
+            "region": "International"
+        }
+        
+        # Use AI to interpret the search query
+        interpretation = await interpret_search_query(
+            request.query, 
+            request.language, 
+            user_context
+        )
+        
+        # Execute enhanced search
+        search_results = await execute_ai_enhanced_search(
+            interpretation, 
+            request.max_results
+        )
+        
+        # Generate AI-powered suggestions
+        suggestions = await generate_search_suggestions(interpretation, search_results)
+        
+        return {
+            "query": request.query,
+            "interpretation": interpretation,
+            "results": search_results,
+            "total_found": len(search_results),
+            "ai_enhanced": not interpretation.get("fallback_used", False),
+            "suggestions": suggestions,
+            "search_time": "< 2 secondes"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error in universal AI search: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to process AI search")
+
+async def generate_search_suggestions(interpretation: Dict, results: List[Dict]) -> List[str]:
+    """Generate intelligent search suggestions based on results and interpretation"""
+    try:
+        suggestions = []
+        
+        # Based on search type
+        search_type = interpretation.get("search_type", "general")
+        
+        if search_type == "artist":
+            suggestions.append("Artistes similaires")
+            suggestions.append("Collaborations avec cet artiste")
+            
+        elif search_type == "style":
+            style = interpretation.get("filters", {}).get("style", [""])[0]
+            if style:
+                suggestions.append(f"Plus de {style}")
+                suggestions.append(f"{style} moderne")
+                suggestions.append(f"{style} traditionnel")
+        
+        elif search_type == "mood":
+            mood = interpretation.get("filters", {}).get("mood", "")
+            if mood:
+                suggestions.append(f"Playlist {mood}")
+                suggestions.append(f"Musique {mood} récente")
+        
+        # Based on cultural context
+        cultural_context = interpretation.get("cultural_context", "")
+        if cultural_context and "cameroun" in cultural_context.lower():
+            suggestions.extend([
+                "Plus de musique camerounaise",
+                "Bikutsi traditionnel",
+                "Makossa moderne"
+            ])
+        elif cultural_context and any(country in cultural_context.lower() 
+                                    for country in ["nigeria", "congo", "senegal"]):
+            suggestions.extend([
+                f"Plus de musique de {cultural_context}",
+                "Afrobeat authentique",
+                "Musique traditionnelle africaine"
+            ])
+        
+        # Based on results found
+        if results:
+            found_styles = list(set(result.get("style", "") for result in results if result.get("style")))
+            for style in found_styles[:2]:
+                if f"Plus de {style}" not in suggestions:
+                    suggestions.append(f"Plus de {style}")
+        
+        # Add Fifi Ribana suggestions (founder promotion)
+        if "fifi" not in request.query.lower() and "ribana" not in request.query.lower():
+            suggestions.append("Découvrir Fifi Ribana - Fondateur US EXPLO")
+        
+        return suggestions[:6]  # Limit to 6 suggestions
+        
+    except Exception as e:
+        logger.error(f"Error generating suggestions: {str(e)}")
+        return ["Musique africaine", "Artistes populaires", "Nouveautés"]
+
 # ===== SEARCH ENDPOINTS =====
 
 @api_router.get("/tracks/search")

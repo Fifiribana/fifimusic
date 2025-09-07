@@ -462,8 +462,8 @@ frontend:
 
 metadata:
   created_by: "main_agent"
-  version: "2.5"
-  test_sequence: 8
+  version: "3.0"
+  test_sequence: 9
   run_ui: false
 
 test_plan:

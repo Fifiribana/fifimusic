@@ -69,10 +69,12 @@ class USExploIntegralTester:
     # ===== 1. SYSTÈME D'AUTHENTIFICATION =====
     
     def test_create_fifi_ribana_account(self):
-        """Test creating the founder account musicien_test@usexplo.com"""
+        """Test creating the founder account with unique timestamp"""
+        import time
+        timestamp = int(time.time())
         user_data = {
-            "email": "musicien_test@usexplo.com",
-            "username": "fifi_ribana_founder",
+            "email": f"fifi_ribana_test_{timestamp}@usexplo.com",
+            "username": f"fifi_ribana_{timestamp}",
             "password": "FifiRibana2025!"
         }
         
@@ -80,14 +82,19 @@ class USExploIntegralTester:
         if success and 'access_token' in response:
             self.fifi_ribana_user_token = response['access_token']
             self.fifi_ribana_user_data = response['user']
+            self.auth_token = response['access_token']  # Set main auth token
             print(f"   ✅ Compte fondateur créé: {self.fifi_ribana_user_data['username']}")
             print(f"   Email: {self.fifi_ribana_user_data['email']}")
         return success
 
     def test_login_fifi_ribana(self):
         """Test login with founder account"""
+        if not self.fifi_ribana_user_data:
+            print("❌ No founder user data available")
+            return False
+            
         login_data = {
-            "email": "musicien_test@usexplo.com",
+            "email": self.fifi_ribana_user_data['email'],
             "password": "FifiRibana2025!"
         }
         

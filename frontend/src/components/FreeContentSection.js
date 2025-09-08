@@ -1,18 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { Play, Pause, Lock, Crown, Star, Download, Eye, Clock, Users, Heart } from 'lucide-react';
-import { useAudio } from '../App';
 import axios from 'axios';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 // Section de contenu gratuit premium pour attirer les visiteurs
-const FreeContentSection = ({ translations }) => {
+const FreeContentSection = ({ translations, useAudio }) => {
   const [freeContent, setFreeContent] = useState([]);
   const [premiumTeasers, setPremiumTeasers] = useState([]);
   const [playingId, setPlayingId] = useState(null);
   const [loading, setLoading] = useState(true);
-  const { playTrack, currentTrack, isPlaying } = useAudio();
+  
+  // Use audio hook if provided, otherwise create dummy functions
+  const { playTrack, currentTrack, isPlaying } = useAudio || {
+    playTrack: () => {},
+    currentTrack: null,
+    isPlaying: false
+  };
 
   useEffect(() => {
     fetchFreeContent();

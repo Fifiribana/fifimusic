@@ -437,6 +437,7 @@ const Navigation = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const { user, logout } = useAuth();
   const { cartItems } = useCart();
+  const { t, currentLanguage, handleLanguageChange } = useTranslation();
 
   return (
     <>
@@ -454,41 +455,39 @@ const Navigation = () => {
               </div>
             </div>
 
-
-
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-8">
-              <a href="/" className="text-white hover:text-terracotta transition-colors">Accueil</a>
+              <a href="/" className="text-white hover:text-terracotta transition-colors" data-translate>{t('home')}</a>
               <div className="relative group">
-                <a href="#explorer" className="text-white hover:text-terracotta transition-colors flex items-center">
-                  Explorer <Globe className="w-4 h-4 ml-1" />
+                <a href="#explorer" className="text-white hover:text-terracotta transition-colors flex items-center" data-translate>
+                  {t('explore')} <Globe className="w-4 h-4 ml-1" />
                 </a>
               </div>
-              <a href="/community" className="text-white hover:text-terracotta transition-colors flex items-center font-semibold">
+              <a href="/community" className="text-white hover:text-terracotta transition-colors flex items-center font-semibold" data-translate>
                 <Users className="w-4 h-4 mr-1" />
-                Communauté
+                {t('community')}
               </a>
-              <a href="/marketplace" className="text-white hover:text-terracotta transition-colors flex items-center font-semibold">
+              <a href="/marketplace" className="text-white hover:text-terracotta transition-colors flex items-center font-semibold" data-translate>
                 <ShoppingBag className="w-4 h-4 mr-1" />
-                Marketplace
+                {t('marketplace')}
               </a>
-              <a href="/subscriptions" className="text-white hover:text-terracotta transition-colors flex items-center font-semibold">
+              <a href="/subscriptions" className="text-white hover:text-terracotta transition-colors flex items-center font-semibold" data-translate>
                 <CreditCard className="w-4 h-4 mr-1" />
-                Abonnements
+                {t('subscriptions')}
               </a>
-              <a href="/ai" className="text-purple-300 hover:text-purple-100 transition-colors flex items-center font-semibold">
+              <a href="/ai" className="text-purple-300 hover:text-purple-100 transition-colors flex items-center font-semibold" data-translate>
                 <Bot className="w-4 h-4 mr-1" />
-                IA Assistant
+                {t('ai_assistant')}
               </a>
-              <a href="/solidarity" className="text-orange-300 hover:text-orange-100 transition-colors flex items-center font-semibold">
+              <a href="/solidarity" className="text-orange-300 hover:text-orange-100 transition-colors flex items-center font-semibold" data-translate>
                 <Heart className="w-4 h-4 mr-1" />
-                Solidarité
+                {t('solidarity')}
               </a>
               <a href="/fifi-ribana-youtube" className="text-red-300 hover:text-red-100 transition-colors flex items-center font-semibold">
                 <Play className="w-4 h-4 mr-1" />
                 Fifi Ribana TV
               </a>
-              <a href="#collections" className="text-white hover:text-terracotta transition-colors">Collections</a>
+              <a href="#collections" className="text-white hover:text-terracotta transition-colors" data-translate>{t('collections')}</a>
               <a href="/simon-messela" className="text-white hover:text-terracotta transition-colors font-semibold">
                 Simon Messela
               </a>
@@ -502,12 +501,18 @@ const Navigation = () => {
 
             {/* Right side icons */}
             <div className="flex items-center space-x-3">
-              {/* Search Bar - À côté du panier */}
+              {/* Language Selector */}
+              <LanguageSelector 
+                currentLanguage={currentLanguage}
+                onLanguageChange={handleLanguageChange}
+              />
+              
+              {/* Search Bar */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <input
                   type="text"
-                  placeholder="Rechercher..."
+                  placeholder={t('search_placeholder')}
                   className="w-48 pl-10 pr-4 py-2 bg-white/20 border-2 border-terracotta/30 rounded-lg text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-terracotta focus:border-terracotta focus:bg-white/30 transition-all text-sm"
                   onKeyPress={(e) => {
                     if (e.key === 'Enter') {

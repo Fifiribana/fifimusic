@@ -478,10 +478,34 @@ async def upload_video(
     tags_list = [tag.strip() for tag in tags.split(",") if tag.strip()]
     audience_list = [aud.strip() for aud in target_audience.split(",") if aud.strip()]
     
-    # Simulate file upload (in real app, upload to cloud storage)
+    # Use demo video URLs for testing (in real app, upload to cloud storage)
     video_id = str(uuid.uuid4())
-    video_url = f"https://storage.tuneme.com/videos/{video_id}.mp4"
-    thumbnail_url = f"https://storage.tuneme.com/thumbnails/{video_id}.jpg"
+    
+    # Demo videos for testing - these are real accessible URLs
+    demo_videos = [
+        {
+            "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+            "thumbnail_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/BigBuckBunny.jpg"
+        },
+        {
+            "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4", 
+            "thumbnail_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ElephantsDream.jpg"
+        },
+        {
+            "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+            "thumbnail_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerBlazes.jpg"
+        },
+        {
+            "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4",
+            "thumbnail_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/Sintel.jpg"
+        }
+    ]
+    
+    # Randomly select a demo video
+    import random
+    selected_demo = random.choice(demo_videos)
+    video_url = selected_demo["video_url"]
+    thumbnail_url = selected_demo["thumbnail_url"]
     
     # AI Analysis
     ai_analysis = await analyze_video_content(title, description, tags_list)

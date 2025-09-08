@@ -1463,7 +1463,8 @@ const SolidarityPageWrapper = () => {
 
 // Main Home Component
 const Home = () => {
-  const { t, translations } = useTranslation();
+  // Temporary fix: comment out translation hook to isolate the issue
+  // const { t, translations } = useTranslation();
   const audioHook = useAudio();
   
   const helloWorldApi = async () => {
@@ -1484,7 +1485,8 @@ const Home = () => {
     <div className="min-h-screen">
       <Navigation />
       <HeroSection />
-      <FreeContentSection translations={translations} useAudio={audioHook} />
+      {/* Temporarily disable FreeContentSection to test */}
+      {/* <FreeContentSection translations={translations} useAudio={audioHook} /> */}
       <InteractiveMap />
       <FeaturedCollections />
       <FeaturedArtistSection />

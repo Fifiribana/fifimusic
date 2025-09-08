@@ -10,7 +10,6 @@ import logging
 import os
 from functools import lru_cache
 import asyncio
-import aioredis
 import json
 import hashlib
 from datetime import datetime, timedelta

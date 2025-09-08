@@ -1477,10 +1477,8 @@ const SolidarityPageWrapper = () => {
   );
 };
 
-// Main Home Component
+// Main Home Component - VERSION 3D ULTRA-MODERNE
 const Home = () => {
-  // Temporary fix: comment out translation hook to isolate the issue
-  // const { t, translations } = useTranslation();
   const audioHook = useAudio();
   
   const helloWorldApi = async () => {
@@ -1498,17 +1496,16 @@ const Home = () => {
   }, []);
 
   return (
-    <div className="min-h-screen">
-      <Navigation />
-      <HeroSection />
-      {/* Temporarily disable FreeContentSection to test */}
-      {/* <FreeContentSection translations={translations} useAudio={audioHook} /> */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-orange-900">
+      <Enhanced3DNavigation />
+      <Enhanced3DHero />
+      {/* Section contenu gratuit intégrée dans le hero */}
       <InteractiveMap />
       <FeaturedCollections />
       <FeaturedArtistSection />
       <SearchSection />
       <Footer />
-      <AudioPlayer />
+      <AdvancedAudioPlayer />
       <PWAInstallButton />
       <AIChatWrapper />
     </div>

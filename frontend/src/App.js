@@ -1289,7 +1289,7 @@ function AuthPage() {
   );
 }
 
-// Composant Navigation
+// Composant Navigation avec Avatars
 function Navigation() {
   const { user, logout, isAuthenticated } = useAuth();
   const [currentPage, setCurrentPage] = useState('home');
@@ -1297,30 +1297,32 @@ function Navigation() {
   return (
     <nav className="navigation">
       <div className="nav-content">
-        <button 
-          className={currentPage === 'home' ? 'active' : ''}
-          onClick={() => setCurrentPage('home')}
-        >
-          🏠 Accueil
-        </button>
-        
-        {isAuthenticated && (
+        <div className="nav-links">
           <button 
-            className={currentPage === 'dashboard' ? 'active' : ''}
-            onClick={() => setCurrentPage('dashboard')}
+            className={currentPage === 'home' ? 'active' : ''}
+            onClick={() => setCurrentPage('home')}
           >
-            📊 Dashboard
+            🏠 Accueil
           </button>
-        )}
+          
+          {isAuthenticated && (
+            <button 
+              className={currentPage === 'dashboard' ? 'active' : ''}
+              onClick={() => setCurrentPage('dashboard')}
+            >
+              📊 Dashboard
+            </button>
+          )}
+        </div>
         
         <div className="nav-user">
           {isAuthenticated ? (
-            <>
-              <span className="user-greeting">Salut, {user?.display_name}! 👋</span>
+            <div className="authenticated-user">
+              <UserAvatar user={user} size="small" showName={true} />
               <button onClick={logout} className="logout-btn">
                 🚪 Déconnexion
               </button>
-            </>
+            </div>
           ) : (
             <span className="login-prompt">Connectez-vous pour accéder aux fonctionnalités avancées</span>
           )}

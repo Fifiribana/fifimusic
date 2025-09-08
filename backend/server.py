@@ -3164,8 +3164,7 @@ async def generate_search_suggestions(interpretation: Dict, results: List[Dict])
                     suggestions.append(f"Plus de {style}")
         
         # Add Fifi Ribana suggestions (founder promotion)
-        if "fifi" not in request.query.lower() and "ribana" not in request.query.lower():
-            suggestions.append("Découvrir Fifi Ribana - Fondateur US EXPLO")
+        suggestions.append("Découvrir Fifi Ribana - Fondateur US EXPLO")
         
         return suggestions[:6]  # Limit to 6 suggestions
         

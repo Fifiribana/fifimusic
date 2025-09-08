@@ -110,7 +110,7 @@ function AuthProvider({ children }) {
   );
 }
 
-// Composant Player Vidéo Avancé
+// Composant Player Vidéo Avancé avec gestion d'erreurs
 function VideoPlayer({ video, onEnded }) {
   const videoRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -118,13 +118,18 @@ function VideoPlayer({ video, onEnded }) {
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [videoError, setVideoError] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const togglePlay = () => {
-    if (videoRef.current) {
+    if (videoRef.current && !videoError) {
       if (isPlaying) {
         videoRef.current.pause();
       } else {
-        videoRef.current.play();
+        videoRef.current.play().catch(error => {
+          console.error('Error playing video:', error);
+          setVideoError(true);
+        });
       }
       setIsPlaying(!isPlaying);
     }
@@ -139,12 +144,24 @@ function VideoPlayer({ video, onEnded }) {
   const handleLoadedMetadata = () => {
     if (videoRef.current) {
       setDuration(videoRef.current.duration);
+      setIsLoading(false);
     }
+  };
+
+  const handleVideoError = (e) => {
+    console.error('Video loading error:', e);
+    setVideoError(true);
+    setIsLoading(false);
+  };
+
+  const handleCanPlay = () => {
+    setIsLoading(false);
+    setVideoError(false);
   };
 
   const handleSeek = (e) => {
     const seekTime = (e.target.value / 100) * duration;
-    if (videoRef.current) {
+    if (videoRef.current && !videoError) {
       videoRef.current.currentTime = seekTime;
       setCurrentTime(seekTime);
     }
@@ -177,18 +194,52 @@ function VideoPlayer({ video, onEnded }) {
   return (
     <div className="video-player">
       <div className="video-container">
-        <video
-          ref={videoRef}
-          src={video.video_url}
-          poster={video.thumbnail_url}
-          onTimeUpdate={handleTimeUpdate}
-          onLoadedMetadata={handleLoadedMetadata}
-          onEnded={onEnded}
-          className="video-element"
-        />
+        {videoError ? (
+          <div className="video-error">
+            <div className="error-content">
+              <h3>🎬 Aperçu Vidéo</h3>
+              <p>Vidéo en cours de traitement...</p>
+              <div className="video-placeholder">
+                <img 
+                  src={video.thumbnail_url} 
+                  alt={video.title}
+                  className="placeholder-thumbnail"
+                  onError={(e) => {
+                    e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 225'%3E%3Crect width='400' height='225' fill='%23667eea'/%3E%3Ctext x='200' y='112.5' text-anchor='middle' fill='white' font-size='20'%3E🎬 TuneMe Video%3C/text%3E%3C/svg%3E";
+                  }}
+                />
+                <div className="placeholder-overlay">
+                  <div className="play-icon">▶️</div>
+                  <p>Cliquez pour lire la vidéo</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
+            {isLoading && (
+              <div className="video-loading">
+                <div className="loading-spinner"></div>
+                <p>Chargement de la vidéo...</p>
+              </div>
+            )}
+            <video
+              ref={videoRef}
+              src={video.video_url}
+              poster={video.thumbnail_url}
+              onTimeUpdate={handleTimeUpdate}
+              onLoadedMetadata={handleLoadedMetadata}
+              onError={handleVideoError}
+              onCanPlay={handleCanPlay}
+              onEnded={onEnded}
+              className="video-element"
+              crossOrigin="anonymous"
+            />
+          </>
+        )}
         
         <div className="video-controls">
-          <button onClick={togglePlay} className="play-btn">
+          <button onClick={togglePlay} className="play-btn" disabled={videoError}>
             {isPlaying ? '⏸️' : '▶️'}
           </button>
           
@@ -199,6 +250,7 @@ function VideoPlayer({ video, onEnded }) {
             value={duration ? (currentTime / duration) * 100 : 0}
             onChange={handleSeek}
             className="progress-bar"
+            disabled={videoError}
           />
           
           <span className="time-display">
@@ -212,9 +264,10 @@ function VideoPlayer({ video, onEnded }) {
             value={volume * 100}
             onChange={handleVolumeChange}
             className="volume-slider"
+            disabled={videoError}
           />
           
-          <button onClick={toggleFullscreen} className="fullscreen-btn">
+          <button onClick={toggleFullscreen} className="fullscreen-btn" disabled={videoError}>
             {isFullscreen ? '📱' : '📺'}
           </button>
         </div>

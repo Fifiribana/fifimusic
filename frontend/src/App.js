@@ -9,17 +9,224 @@ const API = `${BACKEND_URL}/api`;
 // Configuration Axios
 axios.defaults.headers.common['Content-Type'] = 'application/json';
 
-// Context pour l'authentification
-const AuthContext = React.createContext();
+// Composant de Gestion Photo de Profil
+function ProfilePictureManager({ user, onUpdate }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const fileInputRef = useRef(null);
 
-// Hook pour l'authentification
-const useAuth = () => {
-  const context = React.useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validation
+      if (!file.type.startsWith('image/')) {
+        alert('Veuillez sélectionner une image');
+        return;
+      }
+      
+      if (file.size > 5 * 1024 * 1024) {
+        alert('La taille du fichier doit être inférieure à 5MB');
+        return;
+      }
+
+      // Preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPreviewUrl(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleUpload = async () => {
+    const file = fileInputRef.current?.files[0];
+    if (!file) return;
+
+    setUploading(true);
+    
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await axios.post(`${API}/users/me/avatar`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      if (onUpdate) {
+        onUpdate(response.data.avatar_url);
+      }
+      
+      setIsEditing(false);
+      setPreviewUrl(null);
+      alert('Photo de profil mise à jour avec succès! 🎉');
+      
+    } catch (error) {
+      console.error('Erreur upload avatar:', error);
+      alert('Erreur lors de la mise à jour: ' + (error.response?.data?.detail || 'Erreur inconnue'));
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemove = async () => {
+    if (!confirm('Supprimer votre photo de profil?')) return;
+
+    try {
+      const response = await axios.delete(`${API}/users/me/avatar`);
+      
+      if (onUpdate) {
+        onUpdate(response.data.avatar_url);
+      }
+      
+      alert('Photo de profil supprimée');
+    } catch (error) {
+      console.error('Erreur suppression avatar:', error);
+      alert('Erreur lors de la suppression');
+    }
+  };
+
+  const getAvatarDisplay = () => {
+    if (previewUrl) return previewUrl;
+    if (user?.avatar_url) return user.avatar_url;
+    
+    // Avatar par défaut avec initiales
+    const initials = user?.display_name 
+      ? user.display_name.split(' ').map(n => n[0]).join('').toUpperCase()
+      : user?.username?.[0]?.toUpperCase() || '?';
+    
+    return `https://api.dicebear.com/7.x/initials/svg?seed=${initials}&backgroundColor=667eea&color=white`;
+  };
+
+  return (
+    <div className="profile-picture-manager">
+      <div className="avatar-container">
+        <div className="avatar-display">
+          <img 
+            src={getAvatarDisplay()} 
+            alt="Photo de profil"
+            className="profile-avatar"
+            onError={(e) => {
+              e.target.src = `https://api.dicebear.com/7.x/initials/svg?seed=${user?.username || 'User'}&backgroundColor=e2e8f0`;
+            }}
+          />
+          
+          {!isEditing && (
+            <button 
+              className="edit-avatar-btn"
+              onClick={() => setIsEditing(true)}
+              title="Modifier la photo"
+            >
+              📷
+            </button>
+          )}
+        </div>
+
+        {isEditing && (
+          <div className="avatar-editor">
+            <div className="upload-controls">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileSelect}
+                className="file-input-hidden"
+              />
+              
+              <button 
+                className="select-photo-btn"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+              >
+                📁 Choisir une photo
+              </button>
+
+              {previewUrl && (
+                <div className="upload-actions">
+                  <button 
+                    className="upload-btn"
+                    onClick={handleUpload}
+                    disabled={uploading}
+                  >
+                    {uploading ? '⏳ Upload...' : '✅ Confirmer'}
+                  </button>
+                  
+                  <button 
+                    className="cancel-btn"
+                    onClick={() => {
+                      setIsEditing(false);
+                      setPreviewUrl(null);
+                    }}
+                    disabled={uploading}
+                  >
+                    ❌ Annuler
+                  </button>
+                </div>
+              )}
+
+              {user?.avatar_url && (
+                <button 
+                  className="remove-avatar-btn"
+                  onClick={handleRemove}
+                  disabled={uploading}
+                >
+                  🗑️ Supprimer
+                </button>
+              )}
+            </div>
+
+            <div className="avatar-tips">
+              <p>💡 Conseils :</p>
+              <ul>
+                <li>Format: JPG, PNG, GIF</li>
+                <li>Taille max: 5MB</li>
+                <li>Recommandé: 400x400px</li>
+                <li>Photo claire de votre visage</li>
+              </ul>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Composant Avatar Mini pour Navigation
+function UserAvatar({ user, size = 'medium', showName = false, onClick }) {
+  const getAvatarUrl = () => {
+    if (user?.avatar_url) return user.avatar_url;
+    
+    const initials = user?.display_name 
+      ? user.display_name.split(' ').map(n => n[0]).join('').toUpperCase()
+      : user?.username?.[0]?.toUpperCase() || '?';
+    
+    return `https://api.dicebear.com/7.x/initials/svg?seed=${initials}&backgroundColor=667eea&color=white`;
+  };
+
+  const sizeClass = {
+    small: 'avatar-small',
+    medium: 'avatar-medium', 
+    large: 'avatar-large'
+  }[size];
+
+  return (
+    <div className={`user-avatar ${sizeClass}`} onClick={onClick}>
+      <img 
+        src={getAvatarUrl()} 
+        alt={user?.display_name || user?.username}
+        className="avatar-img"
+        onError={(e) => {
+          e.target.src = `https://api.dicebear.com/7.x/initials/svg?seed=${user?.username || 'U'}&backgroundColor=e2e8f0`;
+        }}
+      />
+      {showName && user && (
+        <span className="avatar-name">{user.display_name || user.username}</span>
+      )}
+    </div>
+  );
+}
 
 // Provider d'authentification
 function AuthProvider({ children }) {

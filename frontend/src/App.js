@@ -1677,6 +1677,7 @@ function App() {
                     <Route path="/marketplace" element={<MarketplacePage />} />
                     <Route path="/subscriptions" element={<SubscriptionPage />} />
                     <Route path="/ai" element={<AIPageWrapper />} />
+                    <Route path="/ai-studio" element={<AIStudio3DPage />} />
                     <Route path="/solidarity" element={<SolidarityPageWrapper />} />
                     <Route path="/search" element={<SearchPage />} />
                     <Route path="/fifi-ribana-youtube" element={<FifiRibanaYouTube />} />

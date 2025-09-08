@@ -323,7 +323,7 @@ const AdvancedAudioPlayer = ({ track, onNext, onPrevious, playlist = [] }) => {
                   : 'text-gray-300 hover:text-purple-400 hover:bg-purple-500/10'
               }`}
             >
-              <Equalizer className="w-5 h-5" />
+              <Sliders className="w-5 h-5" />
             </button>
 
             <button className="p-2 text-gray-300 hover:text-blue-400 hover:bg-blue-500/10 rounded-full transition-all duration-300">

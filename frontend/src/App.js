@@ -4,7 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import axios from "axios";
 import { Search, Globe, Music, Users, ShoppingCart, User, Menu, X, Play, Pause, Volume2, Heart, Download, CreditCard, LogIn, UserPlus, LogOut, Star, Headphones, MapPin, Settings, ShoppingBag, Bot } from "lucide-react";
 import { ToastProvider, useToast } from "./components/Toast";
-import { TranslationProvider, useTranslation } from "./components/TranslationProvider";
+import { GlobalTranslationProvider, GlobalLanguageSelector } from "./components/LanguageTranslator";
 import FreeContentSection from "./components/FreeContentSection";
 import LanguageSelector from "./components/LanguageSelector";
 import AIChat from "./components/AIChat";
@@ -17,6 +17,7 @@ import SongDemo from "./pages/SongDemo";
 import SolidarityPage from "./pages/SolidarityPage";
 import SearchPage from "./pages/SearchPage";
 import FifiRibanaYouTube from "./pages/FifiRibanaYouTube";
+import DonationPage from "./pages/DonationPage";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;

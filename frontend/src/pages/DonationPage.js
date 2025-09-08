@@ -3,7 +3,7 @@ import {
   Heart, 
   Youtube, 
   CreditCard, 
-  PayPal, 
+  DollarSign, 
   Banknote, 
   Globe,
   Star,

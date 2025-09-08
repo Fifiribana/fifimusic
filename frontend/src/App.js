@@ -802,7 +802,7 @@ function CreatorDashboard() {
             <div className="analytics-card">
               <div className="card-icon">💰</div>
               <div className="card-content">
-                <h3>${analytics.total_revenue.toFixed(2)}</h3>
+                <h3>${(analytics.total_revenue || 0).toFixed(2)}</h3>
                 <p>Revenus Générés</p>
               </div>
             </div>

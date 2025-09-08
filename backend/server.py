@@ -3720,6 +3720,254 @@ async def get_translated_tracks(
         logging.error(f"Error getting translated tracks: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# =============================================================================
+# DONATION ENDPOINTS - Support YouTube and Platform Maintenance
+# =============================================================================
+
+class DonationRequest(BaseModel):
+    amount: float
+    currency: str = "EUR"
+    type: str  # 'monthly' or 'one-time'
+    payment_method: str  # 'stripe' or 'paypal'
+    donor_name: Optional[str] = None
+    donor_email: str
+    message: Optional[str] = None
+    is_anonymous: bool = False
+    purpose: str = "youtube_maintenance"
+
+class DonationStats(BaseModel):
+    total_donated: float
+    monthly_donors: int
+    youtube_views: int
+    supported_artists: int
+
+@app.post("/create-donation-session")
+async def create_donation_session(donation: DonationRequest):
+    """
+    Crée une session de paiement Stripe pour les donations
+    """
+    try:
+        import stripe
+        stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
+        
+        # Créer les métadonnées de la donation
+        metadata = {
+            'purpose': donation.purpose,
+            'donor_name': donation.donor_name or 'Anonyme',
+            'donor_email': donation.donor_email,
+            'is_anonymous': str(donation.is_anonymous),
+            'donation_type': donation.type
+        }
+        
+        if donation.message:
+            metadata['message'] = donation.message[:500]  # Limiter à 500 caractères
+        
+        # Paramètres de la session Stripe
+        session_params = {
+            'payment_method_types': ['card'],
+            'line_items': [{
+                'price_data': {
+                    'currency': donation.currency.lower(),
+                    'product_data': {
+                        'name': f'Don pour US EXPLO - {donation.purpose.replace("_", " ").title()}',
+                        'description': f'Soutien à la plateforme US EXPLO et au contenu YouTube gratuit',
+                        'images': ['https://via.placeholder.com/400x400/8B4513/FFFFFF?text=US+EXPLO']
+                    },
+                    'unit_amount': int(donation.amount * 100),  # Stripe utilise les centimes
+                },
+                'quantity': 1,
+            }],
+            'mode': 'subscription' if donation.type == 'monthly' else 'payment',
+            'success_url': f"{os.getenv('FRONTEND_URL', 'http://localhost:3000')}/donation/success?session_id={{CHECKOUT_SESSION_ID}}",
+            'cancel_url': f"{os.getenv('FRONTEND_URL', 'http://localhost:3000')}/donation/cancel",
+            'metadata': metadata,
+            'customer_email': donation.donor_email,
+        }
+        
+        # Si c'est un don mensuel, utiliser recurring pricing
+        if donation.type == 'monthly':
+            session_params['line_items'][0]['price_data']['recurring'] = {
+                'interval': 'month'
+            }
+        
+        # Créer la session Stripe
+        session = stripe.checkout.Session.create(**session_params)
+        
+        # Enregistrer la donation dans la base de données
+        donation_data = {
+            'id': str(uuid.uuid4()),
+            'stripe_session_id': session.id,
+            'amount': donation.amount,
+            'currency': donation.currency,
+            'type': donation.type,
+            'payment_method': donation.payment_method,
+            'donor_name': donation.donor_name,
+            'donor_email': donation.donor_email,
+            'message': donation.message,
+            'is_anonymous': donation.is_anonymous,
+            'purpose': donation.purpose,
+            'status': 'pending',
+            'created_at': datetime.utcnow(),
+            'updated_at': datetime.utcnow()
+        }
+        
+        # Insérer dans MongoDB
+        db.donations.insert_one(donation_data)
+        
+        logging.info(f"Donation session created: {session.id} for {donation.donor_email}")
+        
+        return {
+            'checkout_url': session.url,
+            'session_id': session.id,
+            'donation_id': donation_data['id']
+        }
+        
+    except Exception as e:
+        logging.error(f"Error creating donation session: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to create donation session: {str(e)}")
+
+@app.get("/donation/stats", response_model=DonationStats)
+async def get_donation_stats():
+    """
+    Retourne les statistiques de donations pour affichage public
+    """
+    try:
+        # Récupérer les statistiques depuis MongoDB
+        total_donated = db.donations.aggregate([
+            {'$match': {'status': 'completed'}},
+            {'$group': {'_id': None, 'total': {'$sum': '$amount'}}}
+        ])
+        total_donated = list(total_donated)
+        total_amount = total_donated[0]['total'] if total_donated else 0.0
+        
+        # Nombre de donateurs mensuels actifs
+        monthly_donors = db.donations.count_documents({
+            'type': 'monthly',
+            'status': 'completed',
+            'created_at': {'$gte': datetime.utcnow() - timedelta(days=30)}
+        })
+        
+        # Simuler les vues YouTube (dans une vraie app, intégrer l'API YouTube)
+        youtube_views = 125000 + int(total_amount * 10)  # Simulation basée sur les donations
+        
+        # Nombre d'artistes soutenus (basé sur les pistes dans la DB)
+        supported_artists = db.tracks.distinct('artist').__len__()
+        
+        return DonationStats(
+            total_donated=total_amount,
+            monthly_donors=monthly_donors,
+            youtube_views=youtube_views,
+            supported_artists=supported_artists
+        )
+        
+    except Exception as e:
+        logging.error(f"Error getting donation stats: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/donation/webhook")
+async def handle_donation_webhook(request: Request):
+    """
+    Webhook Stripe pour traiter les confirmations de paiement
+    """
+    try:
+        import stripe
+        stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
+        
+        payload = await request.body()
+        sig_header = request.headers.get('stripe-signature')
+        endpoint_secret = os.getenv('STRIPE_WEBHOOK_SECRET')
+        
+        if not endpoint_secret:
+            raise HTTPException(status_code=400, detail="Webhook secret not configured")
+        
+        # Vérifier la signature du webhook
+        event = stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)
+        
+        # Traiter les événements de paiement
+        if event['type'] == 'checkout.session.completed':
+            session = event['data']['object']
+            
+            # Mettre à jour le statut de la donation
+            result = db.donations.update_one(
+                {'stripe_session_id': session['id']},
+                {
+                    '$set': {
+                        'status': 'completed',
+                        'stripe_payment_intent': session.get('payment_intent'),
+                        'updated_at': datetime.utcnow()
+                    }
+                }
+            )
+            
+            if result.modified_count > 0:
+                logging.info(f"Donation completed: {session['id']}")
+            
+        elif event['type'] == 'invoice.payment_succeeded':
+            # Pour les abonnements mensuels
+            invoice = event['data']['object']
+            subscription_id = invoice['subscription']
+            
+            # Enregistrer le paiement récurrent
+            db.donation_payments.insert_one({
+                'id': str(uuid.uuid4()),
+                'stripe_invoice_id': invoice['id'],
+                'stripe_subscription_id': subscription_id,
+                'amount': invoice['amount_paid'] / 100,
+                'currency': invoice['currency'],
+                'status': 'completed',
+                'payment_date': datetime.utcnow()
+            })
+            
+            logging.info(f"Monthly donation payment processed: {invoice['id']}")
+        
+        return {'status': 'success'}
+        
+    except ValueError as e:
+        logging.error(f"Invalid payload in webhook: {e}")
+        raise HTTPException(status_code=400, detail="Invalid payload")
+    except stripe.error.SignatureVerificationError as e:
+        logging.error(f"Invalid signature in webhook: {e}")
+        raise HTTPException(status_code=400, detail="Invalid signature")
+    except Exception as e:
+        logging.error(f"Error processing donation webhook: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/recent-donors")
+async def get_recent_donors(limit: int = Query(default=10, ge=1, le=50)):
+    """
+    Retourne la liste des donateurs récents (publics uniquement)
+    """
+    try:
+        recent_donations = list(db.donations.find(
+            {
+                'status': 'completed',
+                'is_anonymous': False
+            },
+            {
+                'donor_name': 1,
+                'amount': 1,
+                'message': 1,
+                'created_at': 1,
+                '_id': 0
+            }
+        ).sort('created_at', -1).limit(limit))
+        
+        # Formatter les données pour l'affichage
+        formatted_donors = []
+        for donation in recent_donations:
+            formatted_donors.append({
+                'name': donation.get('donor_name', 'Anonyme'),
+                'amount': donation['amount'],
+                'message': donation.get('message', ''),
+                'date': donation['created_at'].isoformat()
+            })
+        
+        return formatted_donors
+        
+    except Exception as e:
+        logging.error(f"Error getting recent donors: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Include the router in the main app
 app.include_router(api_router)
 

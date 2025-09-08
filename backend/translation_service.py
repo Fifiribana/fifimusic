@@ -86,8 +86,15 @@ class TranslationService:
         """Initialise Redis pour le cache"""
         if redis_url:
             try:
-                self.redis_client = await aioredis.from_url(redis_url)
-                await self.redis_client.ping()
+                import redis
+                # Parse Redis URL
+                if redis_url.startswith('redis://'):
+                    self.redis_client = redis.from_url(redis_url)
+                else:
+                    self.redis_client = redis.Redis(host='localhost', port=6379, db=0)
+                
+                # Test connection
+                self.redis_client.ping()
                 logger.info("Redis cache initialized successfully")
             except Exception as e:
                 logger.warning(f"Redis initialization failed: {e}")

@@ -19,6 +19,7 @@ import SearchPage from "./pages/SearchPage";
 import FifiRibanaYouTube from "./pages/FifiRibanaYouTube";
 import DonationPage from "./pages/DonationPage";
 import DonationSuccessPage from "./pages/DonationSuccessPage";
+import AIStudio3DPage from "./pages/AIStudio3DPage";
 
 // Nouveaux composants 3D
 import Enhanced3DHero from "./components/Enhanced3DHero";

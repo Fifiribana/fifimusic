@@ -985,12 +985,13 @@ function HomePage() {
   );
 }
 
-// Composant Dashboard Créateur
+// Composant Dashboard Créateur avec Photo de Profil
 function CreatorDashboard() {
-  const { user } = useAuth();
+  const { user, loadUserProfile } = useAuth();
   const [analytics, setAnalytics] = useState(null);
   const [showUpload, setShowUpload] = useState(false);
   const [userVideos, setUserVideos] = useState([]);
+  const [showProfileEdit, setShowProfileEdit] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -1025,6 +1026,13 @@ function CreatorDashboard() {
     alert('Vidéo téléchargée avec succès! 🎉');
   };
 
+  const handleAvatarUpdate = async (newAvatarUrl) => {
+    // Refresh user profile
+    if (loadUserProfile) {
+      await loadUserProfile();
+    }
+  };
+
   if (!analytics) {
     return <div className="loading-screen">Chargement du dashboard...</div>;
   }
@@ -1032,14 +1040,41 @@ function CreatorDashboard() {
   return (
     <div className="creator-dashboard">
       <header className="dashboard-header">
-        <h1>📊 Dashboard Créateur</h1>
-        <p>Bienvenue, {user.display_name}!</p>
-        <button 
-          className="upload-toggle-btn"
-          onClick={() => setShowUpload(!showUpload)}
-        >
-          {showUpload ? '📊 Voir Analytics' : '📤 Télécharger Vidéo'}
-        </button>
+        <div className="creator-profile-section">
+          <div className="profile-info">
+            <UserAvatar user={user} size="large" />
+            <div className="profile-details">
+              <h1>📊 Dashboard Créateur</h1>
+              <p>Bienvenue, {user.display_name}!</p>
+              <button 
+                className="edit-profile-btn"
+                onClick={() => setShowProfileEdit(!showProfileEdit)}
+              >
+                ⚙️ Modifier le profil
+              </button>
+            </div>
+          </div>
+          
+          <button 
+            className="upload-toggle-btn"
+            onClick={() => setShowUpload(!showUpload)}
+          >
+            {showUpload ? '📊 Voir Analytics' : '📤 Télécharger Vidéo'}
+          </button>
+        </div>
+
+        {/* Section d'édition du profil */}
+        {showProfileEdit && (
+          <div className="profile-edit-section">
+            <div className="profile-edit-card">
+              <h3>📸 Photo de Profil</h3>
+              <ProfilePictureManager 
+                user={user} 
+                onUpdate={handleAvatarUpdate}
+              />
+            </div>
+          </div>
+        )}
       </header>
 
       {showUpload ? (

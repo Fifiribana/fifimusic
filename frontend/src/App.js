@@ -1657,7 +1657,7 @@ const SimonMesselaPage = () => {
 function App() {
   return (
     <ToastProvider>
-      <TranslationProvider>
+      <GlobalTranslationProvider>
         <AuthProvider>
           <AudioProvider>
             <CartProvider>
@@ -1675,6 +1675,9 @@ function App() {
                     <Route path="/search" element={<SearchPage />} />
                     <Route path="/fifi-ribana-youtube" element={<FifiRibanaYouTube />} />
                     <Route path="/song-demo" element={<SongDemo />} />
+                    <Route path="/donation" element={<DonationPage />} />
+                    <Route path="/donation/success" element={<DonationSuccessPage />} />
+                    <Route path="/donation/cancel" element={<Navigate to="/donation" />} />
                     <Route path="/success" element={<SuccessPage />} />
                     <Route path="/cancel" element={<Navigate to="/" />} />
                   </Routes>
@@ -1683,7 +1686,7 @@ function App() {
             </CartProvider>
           </AudioProvider>
         </AuthProvider>
-      </TranslationProvider>
+      </GlobalTranslationProvider>
     </ToastProvider>
   );
 }

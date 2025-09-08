@@ -530,6 +530,26 @@ class TuneMeAPITester:
         self.test_get_user_profile("creator1")
         self.test_get_user_profile("creator2")
 
+        # Test 4.1: Tests de gestion des avatars
+        print("\n📸 Tests de gestion des photos de profil:")
+        self.test_upload_avatar("creator1", file_size_mb=2, file_type="image/jpeg")
+        self.test_upload_avatar("creator2", file_size_mb=1, file_type="image/png")
+        
+        # Test validation des fichiers
+        self.test_upload_avatar_invalid_file("creator1", file_type="text/plain")
+        self.test_upload_avatar_too_large("creator1", file_size_mb=6)
+        
+        # Test suppression d'avatar
+        self.test_remove_avatar("creator1")
+        
+        # Test mise à jour du profil
+        self.test_update_user_profile("creator1", display_name="Créateur Pro Mis à Jour", bio="Bio mise à jour avec nouvelles infos")
+        self.test_update_user_profile("creator2", bio="Nouvelle bio créative")
+        
+        # Test récupération des abonnements
+        self.test_get_user_subscriptions("creator1")
+        self.test_get_user_subscriptions("creator2")
+
         # Test 5: Upload de vidéos avec analyse IA
         print("\n📹 Tests d'upload vidéo avec IA:")
         self.test_video_upload("creator1", "Publicité iPhone 16 Pro", "Nouvelle campagne publicitaire pour l'iPhone 16 Pro avec des effets visuels époustouflants", "Technology", "iphone,apple,smartphone,tech", True, "tv_commercial")

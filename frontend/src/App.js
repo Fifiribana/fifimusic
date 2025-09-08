@@ -322,6 +322,7 @@ function AuthProvider({ children }) {
       login, 
       register, 
       logout, 
+      loadUserProfile,
       isAuthenticated: !!token 
     }}>
       {children}

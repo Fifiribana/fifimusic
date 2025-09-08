@@ -1461,6 +1461,7 @@ const SolidarityPageWrapper = () => {
 // Main Home Component
 const Home = () => {
   const { t, translations } = useTranslation();
+  const audioHook = useAudio();
   
   const helloWorldApi = async () => {
     try {
@@ -1480,7 +1481,7 @@ const Home = () => {
     <div className="min-h-screen">
       <Navigation />
       <HeroSection />
-      <FreeContentSection translations={translations} />
+      <FreeContentSection translations={translations} useAudio={audioHook} />
       <InteractiveMap />
       <FeaturedCollections />
       <FeaturedArtistSection />

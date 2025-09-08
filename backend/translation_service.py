@@ -111,9 +111,9 @@ class TranslationService:
             return None
             
         try:
-            cached_data = await self.redis_client.get(f"translation:{cache_key}")
+            cached_data = self.redis_client.get(f"translation:{cache_key}")
             if cached_data:
-                return json.loads(cached_data)
+                return json.loads(cached_data.decode('utf-8'))
         except Exception as e:
             logger.warning(f"Cache retrieval error: {e}")
         
@@ -125,7 +125,7 @@ class TranslationService:
             return
             
         try:
-            await self.redis_client.setex(
+            self.redis_client.setex(
                 f"translation:{cache_key}",
                 self.cache_ttl,
                 json.dumps(translation_data)

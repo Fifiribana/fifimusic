@@ -260,7 +260,7 @@ function VideoCard({ video, onClick }) {
           <span className="likes">👍 {video.likes_count}</span>
           <span className="comments">💬 {video.comments_count}</span>
           {video.is_ad && (
-            <span className="revenue">💰 ${video.revenue_generated.toFixed(2)}</span>
+            <span className="revenue">💰 ${(video.revenue_generated || 0).toFixed(2)}</span>
           )}
         </div>
         

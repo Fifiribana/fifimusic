@@ -3751,6 +3751,10 @@ async def startup_event():
     """Initialize the database with sample data"""
     logger.info("Starting US EXPLO API v2.0...")
     
+    # Initialize translation service with Redis
+    redis_url = os.getenv('REDIS_URL', 'redis://localhost:6379')
+    await translation_service.initialize_redis(redis_url)
+    
     # Check if we already have sample data
     track_count = await db.tracks.count_documents({})
     if track_count < 10:  # Add more sample data

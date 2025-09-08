@@ -3753,6 +3753,11 @@ async def startup_event():
     # Initialize translation service with Redis
     redis_url = os.getenv('REDIS_URL', 'redis://localhost:6379')
     await translation_service.initialize_redis(redis_url)
+    logger.info("Translation service initialized with Redis")
+    
+    # Initialize translation service with Redis
+    redis_url = os.getenv('REDIS_URL', 'redis://localhost:6379')
+    await translation_service.initialize_redis(redis_url)
     
     # Check if we already have sample data
     track_count = await db.tracks.count_documents({})

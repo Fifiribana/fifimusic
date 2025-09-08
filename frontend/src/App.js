@@ -1643,31 +1643,33 @@ const SimonMesselaPage = () => {
 function App() {
   return (
     <ToastProvider>
-      <AuthProvider>
-        <AudioProvider>
-          <CartProvider>
-            <div className="App">
-              <BrowserRouter>
-                <Routes>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/simon-messela" element={<SimonMesselaPage />} />
-                  <Route path="/admin" element={<AdminPage />} />
-                  <Route path="/community" element={<CommunityPage />} />
-                  <Route path="/marketplace" element={<MarketplacePage />} />
-                  <Route path="/subscriptions" element={<SubscriptionPage />} />
-                  <Route path="/ai" element={<AIPageWrapper />} />
-                  <Route path="/solidarity" element={<SolidarityPageWrapper />} />
-                  <Route path="/search" element={<SearchPage />} />
-                  <Route path="/fifi-ribana-youtube" element={<FifiRibanaYouTube />} />
-                  <Route path="/song-demo" element={<SongDemo />} />
-                  <Route path="/success" element={<SuccessPage />} />
-                  <Route path="/cancel" element={<Navigate to="/" />} />
-                </Routes>
-              </BrowserRouter>
-            </div>
-          </CartProvider>
-        </AudioProvider>
-      </AuthProvider>
+      <TranslationProvider>
+        <AuthProvider>
+          <AudioProvider>
+            <CartProvider>
+              <div className="App">
+                <BrowserRouter>
+                  <Routes>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/simon-messela" element={<SimonMesselaPage />} />
+                    <Route path="/admin" element={<AdminPage />} />
+                    <Route path="/community" element={<CommunityPage />} />
+                    <Route path="/marketplace" element={<MarketplacePage />} />
+                    <Route path="/subscriptions" element={<SubscriptionPage />} />
+                    <Route path="/ai" element={<AIPageWrapper />} />
+                    <Route path="/solidarity" element={<SolidarityPageWrapper />} />
+                    <Route path="/search" element={<SearchPage />} />
+                    <Route path="/fifi-ribana-youtube" element={<FifiRibanaYouTube />} />
+                    <Route path="/song-demo" element={<SongDemo />} />
+                    <Route path="/success" element={<SuccessPage />} />
+                    <Route path="/cancel" element={<Navigate to="/" />} />
+                  </Routes>
+                </BrowserRouter>
+              </div>
+            </CartProvider>
+          </AudioProvider>
+        </AuthProvider>
+      </TranslationProvider>
     </ToastProvider>
   );
 }

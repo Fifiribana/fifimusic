@@ -122,6 +122,166 @@ class TuneMeAPITester:
         except Exception as e:
             return self.log_test(f"Get Profile ({username})", False, f"- Error: {str(e)}")
 
+    def test_upload_avatar(self, username, file_size_mb=1, file_type="image/jpeg"):
+        """Test POST /api/users/me/avatar - Upload avatar/profile picture"""
+        try:
+            if username not in self.user_tokens:
+                return self.log_test(f"Upload Avatar ({username})", False, "- No token available")
+            
+            headers = {"Authorization": f"Bearer {self.user_tokens[username]}"}
+            
+            # Create fake image content
+            fake_image_size = int(file_size_mb * 1024 * 1024)  # Convert MB to bytes
+            fake_image_content = b"fake image content" * (fake_image_size // 18 + 1)
+            fake_image_content = fake_image_content[:fake_image_size]
+            
+            files = {"file": ("test_avatar.jpg", io.BytesIO(fake_image_content), file_type)}
+            
+            response = requests.post(f"{self.api_url}/users/me/avatar", files=files, headers=headers, timeout=15)
+            success = response.status_code == 200
+            
+            if success:
+                data = response.json()
+                required_fields = ["message", "avatar_url", "file_size", "file_type"]
+                success = all(field in data for field in required_fields)
+                if success:
+                    avatar_url = data.get("avatar_url", "")
+                    return self.log_test(f"Upload Avatar ({username})", True, f"- Avatar URL: {avatar_url[:50]}...")
+                else:
+                    return self.log_test(f"Upload Avatar ({username})", False, "- Missing required fields")
+            else:
+                error_msg = ""
+                try:
+                    error_data = response.json()
+                    error_msg = f"- Error: {error_data.get('detail', 'Unknown error')}"
+                except:
+                    error_msg = f"- Status: {response.status_code}"
+                return self.log_test(f"Upload Avatar ({username})", False, error_msg)
+        except Exception as e:
+            return self.log_test(f"Upload Avatar ({username})", False, f"- Error: {str(e)}")
+
+    def test_upload_avatar_invalid_file(self, username, file_type="text/plain"):
+        """Test POST /api/users/me/avatar with invalid file type"""
+        try:
+            if username not in self.user_tokens:
+                return self.log_test(f"Upload Invalid Avatar ({username})", False, "- No token available")
+            
+            headers = {"Authorization": f"Bearer {self.user_tokens[username]}"}
+            
+            # Create fake non-image content
+            fake_content = b"This is not an image file"
+            files = {"file": ("test_file.txt", io.BytesIO(fake_content), file_type)}
+            
+            response = requests.post(f"{self.api_url}/users/me/avatar", files=files, headers=headers, timeout=15)
+            success = response.status_code == 400  # Should fail with 400 Bad Request
+            
+            if success:
+                return self.log_test(f"Upload Invalid Avatar ({username})", True, "- Correctly rejected non-image file")
+            else:
+                return self.log_test(f"Upload Invalid Avatar ({username})", False, f"- Status: {response.status_code} (expected 400)")
+        except Exception as e:
+            return self.log_test(f"Upload Invalid Avatar ({username})", False, f"- Error: {str(e)}")
+
+    def test_upload_avatar_too_large(self, username, file_size_mb=6):
+        """Test POST /api/users/me/avatar with file too large (>5MB)"""
+        try:
+            if username not in self.user_tokens:
+                return self.log_test(f"Upload Large Avatar ({username})", False, "- No token available")
+            
+            headers = {"Authorization": f"Bearer {self.user_tokens[username]}"}
+            
+            # Create fake large image content (6MB)
+            fake_image_size = int(file_size_mb * 1024 * 1024)
+            fake_image_content = b"fake large image content" * (fake_image_size // 24 + 1)
+            fake_image_content = fake_image_content[:fake_image_size]
+            
+            files = {"file": ("large_avatar.jpg", io.BytesIO(fake_image_content), "image/jpeg")}
+            
+            response = requests.post(f"{self.api_url}/users/me/avatar", files=files, headers=headers, timeout=15)
+            success = response.status_code == 400  # Should fail with 400 Bad Request
+            
+            if success:
+                return self.log_test(f"Upload Large Avatar ({username})", True, "- Correctly rejected large file")
+            else:
+                return self.log_test(f"Upload Large Avatar ({username})", False, f"- Status: {response.status_code} (expected 400)")
+        except Exception as e:
+            return self.log_test(f"Upload Large Avatar ({username})", False, f"- Error: {str(e)}")
+
+    def test_remove_avatar(self, username):
+        """Test DELETE /api/users/me/avatar - Remove user avatar"""
+        try:
+            if username not in self.user_tokens:
+                return self.log_test(f"Remove Avatar ({username})", False, "- No token available")
+            
+            headers = {"Authorization": f"Bearer {self.user_tokens[username]}"}
+            response = requests.delete(f"{self.api_url}/users/me/avatar", headers=headers, timeout=10)
+            success = response.status_code == 200
+            
+            if success:
+                data = response.json()
+                required_fields = ["message", "avatar_url"]
+                success = all(field in data for field in required_fields)
+                if success:
+                    avatar_url = data.get("avatar_url", "")
+                    return self.log_test(f"Remove Avatar ({username})", True, f"- Default avatar: {avatar_url[:50]}...")
+                else:
+                    return self.log_test(f"Remove Avatar ({username})", False, "- Missing required fields")
+            else:
+                return self.log_test(f"Remove Avatar ({username})", False, f"- Status: {response.status_code}")
+        except Exception as e:
+            return self.log_test(f"Remove Avatar ({username})", False, f"- Error: {str(e)}")
+
+    def test_update_user_profile(self, username, display_name=None, bio=None):
+        """Test PUT /api/users/me/profile - Update user profile"""
+        try:
+            if username not in self.user_tokens:
+                return self.log_test(f"Update Profile ({username})", False, "- No token available")
+            
+            headers = {"Authorization": f"Bearer {self.user_tokens[username]}"}
+            
+            # Prepare form data
+            data = {}
+            if display_name:
+                data["display_name"] = display_name
+            if bio is not None:
+                data["bio"] = bio
+            
+            response = requests.put(f"{self.api_url}/users/me/profile", data=data, headers=headers, timeout=10)
+            success = response.status_code == 200
+            
+            if success:
+                profile_data = response.json()
+                required_fields = ["id", "username", "display_name", "bio"]
+                success = all(field in profile_data for field in required_fields)
+                if success:
+                    updated_name = profile_data.get("display_name", "")
+                    return self.log_test(f"Update Profile ({username})", True, f"- New name: {updated_name}")
+                else:
+                    return self.log_test(f"Update Profile ({username})", False, "- Missing required fields")
+            else:
+                return self.log_test(f"Update Profile ({username})", False, f"- Status: {response.status_code}")
+        except Exception as e:
+            return self.log_test(f"Update Profile ({username})", False, f"- Error: {str(e)}")
+
+    def test_get_user_subscriptions(self, username):
+        """Test GET /api/users/me/subscriptions - Get user subscriptions"""
+        try:
+            if username not in self.user_tokens:
+                return self.log_test(f"Get Subscriptions ({username})", False, "- No token available")
+            
+            headers = {"Authorization": f"Bearer {self.user_tokens[username]}"}
+            response = requests.get(f"{self.api_url}/users/me/subscriptions", headers=headers, timeout=10)
+            success = response.status_code == 200
+            
+            if success:
+                subscriptions = response.json()
+                success = isinstance(subscriptions, list)
+                return self.log_test(f"Get Subscriptions ({username})", success, f"- Count: {len(subscriptions)}")
+            else:
+                return self.log_test(f"Get Subscriptions ({username})", False, f"- Status: {response.status_code}")
+        except Exception as e:
+            return self.log_test(f"Get Subscriptions ({username})", False, f"- Error: {str(e)}")
+
     def test_video_upload(self, username, title, description, category, tags="", is_ad=False, ad_type=None):
         """Test POST /api/videos/upload - Upload vidéo avec analyse IA"""
         try:

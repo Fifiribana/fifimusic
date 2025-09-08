@@ -3569,6 +3569,151 @@ async def get_solidarity_stats():
         logger.error(f"Error getting solidarity stats: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to get statistics")
 
+# =============================================================================
+# TRANSLATION ENDPOINTS - Multilingual Support
+# =============================================================================
+
+@app.post("/translate", response_model=TranslationResponse)
+async def translate_text(request: TranslationRequest):
+    """
+    Traduit un texte dans la langue cible spécifiée
+    
+    - **text**: Le texte à traduire
+    - **target_language**: Code de langue cible (ex: 'en', 'es', 'de')
+    - **source_language**: Code de langue source (optionnel, auto-détection si omis)
+    """
+    try:
+        result = await translation_service.translate_text(request)
+        return result
+    except Exception as e:
+        logging.error(f"Translation error: {e}")
+        raise HTTPException(status_code=500, detail=f"Translation failed: {str(e)}")
+
+@app.post("/translate/batch", response_model=BatchTranslationResponse)
+async def translate_batch(request: BatchTranslationRequest):
+    """
+    Traduit un lot de textes de manière optimisée
+    
+    - **texts**: Liste des textes à traduire
+    - **target_language**: Code de langue cible
+    - **source_language**: Code de langue source (optionnel)
+    """
+    try:
+        result = await translation_service.translate_batch(request)
+        return result
+    except Exception as e:
+        logging.error(f"Batch translation error: {e}")
+        raise HTTPException(status_code=500, detail=f"Batch translation failed: {str(e)}")
+
+@app.post("/detect-language", response_model=LanguageDetectionResponse)
+async def detect_language(request: LanguageDetectionRequest):
+    """
+    Détecte automatiquement la langue d'un texte
+    
+    - **text**: Le texte dont on veut détecter la langue
+    """
+    try:
+        result = await translation_service.detect_language(request)
+        return result
+    except Exception as e:
+        logging.error(f"Language detection error: {e}")
+        raise HTTPException(status_code=500, detail=f"Language detection failed: {str(e)}")
+
+@app.get("/languages")
+async def get_supported_languages():
+    """
+    Retourne la liste des langues supportées pour la traduction
+    
+    Returns: Dictionnaire avec les codes de langue et leurs noms
+    """
+    try:
+        languages = await translation_service.get_supported_languages()
+        return languages
+    except Exception as e:
+        logging.error(f"Get languages error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get supported languages: {str(e)}")
+
+@app.get("/translation/stats")
+async def get_translation_stats():
+    """
+    Retourne les statistiques du service de traduction
+    
+    Returns: Informations sur le cache et les performances
+    """
+    try:
+        stats = await translation_service.get_translation_stats()
+        return stats
+    except Exception as e:
+        logging.error(f"Translation stats error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get translation stats: {str(e)}")
+
+# Endpoint pour traduire les métadonnées des pistes musicales
+@app.get("/tracks/translated")
+async def get_translated_tracks(
+    lang: str = Query(default="fr", description="Code de langue pour les traductions"),
+    limit: int = Query(default=20, ge=1, le=100),
+    region: Optional[str] = Query(None),
+    style: Optional[str] = Query(None),
+    preview_available: Optional[bool] = Query(None)
+):
+    """
+    Retourne les pistes avec leurs métadonnées traduites dans la langue spécifiée
+    """
+    try:
+        # Récupérer les pistes normalement
+        filter_dict = {}
+        if region:
+            filter_dict["region"] = {"$regex": region, "$options": "i"}
+        if style:
+            filter_dict["style"] = {"$regex": style, "$options": "i"}
+        if preview_available is not None:
+            filter_dict["preview_url"] = {"$exists": preview_available, "$ne": "" if preview_available else {"$exists": True}}
+        
+        tracks = list(db.tracks.find(filter_dict).limit(limit))
+        
+        # Si pas de traduction demandée ou langue française, retourner directement
+        if lang == "fr" or lang == "french":
+            return [serialize_track(track) for track in tracks]
+        
+        # Traduire les métadonnées si nécessaire
+        translated_tracks = []
+        for track in tracks:
+            track_data = serialize_track(track)
+            
+            # Traduire les champs textuels
+            if track_data.get('description'):
+                try:
+                    translation_req = TranslationRequest(
+                        text=track_data['description'],
+                        target_language=lang,
+                        source_language='fr'
+                    )
+                    translated_desc = await translation_service.translate_text(translation_req)
+                    track_data['description'] = translated_desc.translated_text
+                except Exception as e:
+                    logging.warning(f"Failed to translate description: {e}")
+            
+            # Traduire le nom de région si nécessaire
+            if track_data.get('region') and lang != 'fr':
+                try:
+                    region_translation_req = TranslationRequest(
+                        text=track_data['region'],
+                        target_language=lang,
+                        source_language='fr'
+                    )
+                    translated_region = await translation_service.translate_text(region_translation_req)
+                    track_data['region_translated'] = translated_region.translated_text
+                except Exception:
+                    track_data['region_translated'] = track_data['region']
+            
+            translated_tracks.append(track_data)
+        
+        return translated_tracks
+        
+    except Exception as e:
+        logging.error(f"Error getting translated tracks: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Include the router in the main app
 app.include_router(api_router)
 

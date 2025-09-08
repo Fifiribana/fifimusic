@@ -1,347 +1,1057 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import "./App.css";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import axios from "axios";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-// Composant principal ChatMe
-function ChatMe() {
-  const [currentUser, setCurrentUser] = useState("");
-  const [users, setUsers] = useState([]);
-  const [selectedUser, setSelectedUser] = useState("");
-  const [messages, setMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState("");
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+// Configuration Axios
+axios.defaults.headers.common['Content-Type'] = 'application/json';
+
+// Context pour l'authentification
+const AuthContext = React.createContext();
+
+// Hook pour l'authentification
+const useAuth = () => {
+  const context = React.useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
+
+// Provider d'authentification
+function AuthProvider({ children }) {
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(localStorage.getItem('tuneme_token'));
   const [loading, setLoading] = useState(false);
 
-  // Charger les utilisateurs actifs
-  const loadUsers = async () => {
+  useEffect(() => {
+    if (token) {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      loadUserProfile();
+    }
+  }, [token]);
+
+  const loadUserProfile = async () => {
     try {
-      const response = await axios.get(`${API}/users`);
-      setUsers(response.data.filter(user => user !== currentUser));
+      const response = await axios.get(`${API}/users/me`);
+      setUser(response.data);
     } catch (error) {
-      console.error("Erreur lors du chargement des utilisateurs:", error);
+      console.error('Failed to load user profile:', error);
+      logout();
     }
   };
 
-  // Charger la conversation entre deux utilisateurs
-  const loadConversation = async (user1, user2) => {
-    if (!user1 || !user2) return;
-    
+  const login = async (email, password) => {
     setLoading(true);
     try {
-      const response = await axios.get(`${API}/messages/conversation/${user1}/${user2}`);
-      setMessages(response.data);
+      const response = await axios.post(`${API}/auth/login`, { email, password });
+      const { token: newToken, user: userData } = response.data;
+      
+      setToken(newToken);
+      setUser(userData);
+      localStorage.setItem('tuneme_token', newToken);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+      
+      return { success: true };
     } catch (error) {
-      console.error("Erreur lors du chargement de la conversation:", error);
+      return { 
+        success: false, 
+        error: error.response?.data?.detail || 'Login failed' 
+      };
     } finally {
       setLoading(false);
     }
   };
 
-  // Envoyer un message
-  const sendMessage = async () => {
-    if (!newMessage.trim() || !selectedUser) return;
-
+  const register = async (userData) => {
+    setLoading(true);
     try {
-      await axios.post(`${API}/messages`, {
-        sender_name: currentUser,
-        receiver_name: selectedUser,
-        content: newMessage.trim()
-      });
+      const response = await axios.post(`${API}/auth/register`, userData);
+      const { token: newToken, user: newUser } = response.data;
       
-      setNewMessage("");
-      // Recharger la conversation
-      await loadConversation(currentUser, selectedUser);
+      setToken(newToken);
+      setUser(newUser);
+      localStorage.setItem('tuneme_token', newToken);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+      
+      return { success: true };
     } catch (error) {
-      console.error("Erreur lors de l'envoi du message:", error);
+      return { 
+        success: false, 
+        error: error.response?.data?.detail || 'Registration failed' 
+      };
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Gérer la connexion utilisateur
-  const handleLogin = (username) => {
-    if (username.trim()) {
-      setCurrentUser(username.trim());
-      setIsLoggedIn(true);
-    }
+  const logout = () => {
+    setUser(null);
+    setToken(null);
+    localStorage.removeItem('tuneme_token');
+    delete axios.defaults.headers.common['Authorization'];
   };
-
-  // Sélectionner un utilisateur pour discuter
-  const selectUser = (user) => {
-    setSelectedUser(user);
-    loadConversation(currentUser, user);
-  };
-
-  // Charger les utilisateurs au démarrage
-  useEffect(() => {
-    if (isLoggedIn) {
-      loadUsers();
-      // Recharger les utilisateurs toutes les 10 secondes
-      const interval = setInterval(loadUsers, 10000);
-      return () => clearInterval(interval);
-    }
-  }, [isLoggedIn, currentUser]);
-
-  // Recharger la conversation toutes les 3 secondes si un utilisateur est sélectionné
-  useEffect(() => {
-    if (selectedUser && currentUser) {
-      const interval = setInterval(() => {
-        loadConversation(currentUser, selectedUser);
-      }, 3000);
-      return () => clearInterval(interval);
-    }
-  }, [selectedUser, currentUser]);
-
-  // Écran de connexion
-  if (!isLoggedIn) {
-    return <LoginScreen onLogin={handleLogin} />;
-  }
 
   return (
-    <div className="chatme-container">
-      {/* En-tête */}
-      <header className="chatme-header">
-        <div className="header-content">
-          <h1 className="app-title">💬 ChatMe</h1>
-          <div className="user-info">
-            <span className="current-user">Connecté: {currentUser}</span>
-            <button 
-              className="logout-btn"
-              onClick={() => {
-                setIsLoggedIn(false);
-                setCurrentUser("");
-                setSelectedUser("");
-                setMessages([]);
-              }}
-            >
-              Déconnexion
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <div className="chat-layout">
-        {/* Barre latérale - Liste des utilisateurs */}
-        <aside className="users-sidebar">
-          <div className="sidebar-header">
-            <h3>Conversations</h3>
-            <button onClick={loadUsers} className="refresh-btn">🔄</button>
-          </div>
-          
-          <div className="users-list">
-            {users.length === 0 ? (
-              <div className="no-users">
-                <p>Aucun utilisateur disponible</p>
-                <p className="hint">Envoyez un message à quelqu'un pour commencer!</p>
-              </div>
-            ) : (
-              users.map(user => (
-                <div
-                  key={user}
-                  className={`user-item ${selectedUser === user ? 'active' : ''}`}
-                  onClick={() => selectUser(user)}
-                >
-                  <div className="user-avatar">
-                    {user.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="user-info">
-                    <div className="user-name">{user}</div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-
-          {/* Démarrer nouvelle conversation */}
-          <div className="new-conversation">
-            <NewConversationForm 
-              currentUser={currentUser}
-              onConversationStart={selectUser}
-            />
-          </div>
-        </aside>
-
-        {/* Zone de chat principale */}
-        <main className="chat-main">
-          {selectedUser ? (
-            <>
-              {/* En-tête de la conversation */}
-              <div className="conversation-header">
-                <div className="chat-user-info">
-                  <div className="chat-avatar">
-                    {selectedUser.charAt(0).toUpperCase()}
-                  </div>
-                  <h3>Discussion avec {selectedUser}</h3>
-                </div>
-              </div>
-
-              {/* Zone des messages */}
-              <div className="messages-container">
-                {loading ? (
-                  <div className="loading">Chargement des messages...</div>
-                ) : messages.length === 0 ? (
-                  <div className="no-messages">
-                    <p>Aucun message pour l'instant</p>
-                    <p>Commencez la conversation!</p>
-                  </div>
-                ) : (
-                  messages.map(message => (
-                    <div
-                      key={message.id}
-                      className={`message ${message.sender_name === currentUser ? 'sent' : 'received'}`}
-                    >
-                      <div className="message-content">
-                        <div className="message-text">{message.content}</div>
-                        <div className="message-time">
-                          {new Date(message.timestamp).toLocaleTimeString('fr-FR', {
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              {/* Zone de saisie */}
-              <div className="message-input-container">
-                <div className="message-input-wrapper">
-                  <input
-                    type="text"
-                    className="message-input"
-                    placeholder="Tapez votre message..."
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
-                        sendMessage();
-                      }
-                    }}
-                  />
-                  <button
-                    className="send-button"
-                    onClick={sendMessage}
-                    disabled={!newMessage.trim()}
-                  >
-                    Envoyer 📤
-                  </button>
-                </div>
-              </div>
-            </>
-          ) : (
-            <div className="no-conversation">
-              <div className="welcome-message">
-                <h2>Bienvenue sur ChatMe! 💬</h2>
-                <p>Sélectionnez un utilisateur dans la liste pour commencer une conversation</p>
-                <p>ou démarrez une nouvelle conversation ci-dessous</p>
-              </div>
-            </div>
-          )}
-        </main>
-      </div>
-    </div>
+    <AuthContext.Provider value={{ 
+      user, 
+      token, 
+      loading, 
+      login, 
+      register, 
+      logout, 
+      isAuthenticated: !!token 
+    }}>
+      {children}
+    </AuthContext.Provider>
   );
 }
 
-// Composant d'écran de connexion
-function LoginScreen({ onLogin }) {
-  const [username, setUsername] = useState("");
+// Composant Player Vidéo Avancé
+function VideoPlayer({ video, onEnded }) {
+  const videoRef = useRef(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(1);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (username.trim()) {
-      onLogin(username);
+  const togglePlay = () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
     }
   };
 
+  const handleTimeUpdate = () => {
+    if (videoRef.current) {
+      setCurrentTime(videoRef.current.currentTime);
+    }
+  };
+
+  const handleLoadedMetadata = () => {
+    if (videoRef.current) {
+      setDuration(videoRef.current.duration);
+    }
+  };
+
+  const handleSeek = (e) => {
+    const seekTime = (e.target.value / 100) * duration;
+    if (videoRef.current) {
+      videoRef.current.currentTime = seekTime;
+      setCurrentTime(seekTime);
+    }
+  };
+
+  const handleVolumeChange = (e) => {
+    const newVolume = e.target.value / 100;
+    setVolume(newVolume);
+    if (videoRef.current) {
+      videoRef.current.volume = newVolume;
+    }
+  };
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      videoRef.current.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  };
+
+  const formatTime = (time) => {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
   return (
-    <div className="login-screen">
-      <div className="login-container">
-        <div className="login-header">
-          <h1>💬 ChatMe</h1>
-          <p>Centre de Messages</p>
-        </div>
+    <div className="video-player">
+      <div className="video-container">
+        <video
+          ref={videoRef}
+          src={video.video_url}
+          poster={video.thumbnail_url}
+          onTimeUpdate={handleTimeUpdate}
+          onLoadedMetadata={handleLoadedMetadata}
+          onEnded={onEnded}
+          className="video-element"
+        />
         
-        <form onSubmit={handleSubmit} className="login-form">
-          <div className="input-group">
-            <label htmlFor="username">Nom d'utilisateur</label>
-            <input
-              id="username"
-              type="text"
-              className="username-input"
-              placeholder="Entrez votre nom d'utilisateur"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              autoFocus
-            />
-          </div>
-          
-          <button type="submit" className="login-button" disabled={!username.trim()}>
-            Se connecter
+        <div className="video-controls">
+          <button onClick={togglePlay} className="play-btn">
+            {isPlaying ? '⏸️' : '▶️'}
           </button>
-        </form>
-        
-        <div className="login-footer">
-          <p>Entrez simplement votre nom pour commencer à discuter!</p>
+          
+          <input
+            type="range"
+            min="0"
+            max="100"
+            value={duration ? (currentTime / duration) * 100 : 0}
+            onChange={handleSeek}
+            className="progress-bar"
+          />
+          
+          <span className="time-display">
+            {formatTime(currentTime)} / {formatTime(duration)}
+          </span>
+          
+          <input
+            type="range"
+            min="0"
+            max="100"
+            value={volume * 100}
+            onChange={handleVolumeChange}
+            className="volume-slider"
+          />
+          
+          <button onClick={toggleFullscreen} className="fullscreen-btn">
+            {isFullscreen ? '📱' : '📺'}
+          </button>
         </div>
       </div>
     </div>
   );
 }
 
-// Composant pour démarrer une nouvelle conversation
-function NewConversationForm({ currentUser, onConversationStart }) {
-  const [newUserName, setNewUserName] = useState("");
+// Composant Card Vidéo
+function VideoCard({ video, onClick }) {
+  const formatViews = (views) => {  
+    if (views >= 1000000) return `${(views / 1000000).toFixed(1)}M`;
+    if (views >= 1000) return `${(views / 1000).toFixed(1)}K`;
+    return views.toString();
+  };
+
+  const formatDuration = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  return (
+    <div className="video-card" onClick={() => onClick(video)}>
+      <div className="video-thumbnail">
+        <img src={video.thumbnail_url} alt={video.title} />
+        <div className="video-duration">{formatDuration(video.duration)}</div>
+        {video.is_ad && <div className="ad-badge">📺 AD</div>}
+        <div className="ai-score">
+          🤖 {video.ai_analysis?.engagement_prediction || 'N/A'}
+        </div>
+      </div>
+      
+      <div className="video-info">
+        <h3 className="video-title">{video.title}</h3>
+        <div className="video-meta">
+          <span className="creator">@{video.creator_username}</span>
+          <span className="views">{formatViews(video.views_count)} vues</span>
+          <span className="category">{video.category}</span>
+        </div>
+        
+        <div className="video-stats">
+          <span className="likes">👍 {video.likes_count}</span>
+          <span className="comments">💬 {video.comments_count}</span>
+          {video.is_ad && (
+            <span className="revenue">💰 ${video.revenue_generated.toFixed(2)}</span>
+          )}
+        </div>
+        
+        <div className="video-tags">
+          {video.tags.slice(0, 3).map(tag => (
+            <span key={tag} className="tag">{tag}</span>
+          ))}
+        </div>
+        
+        {video.ai_generated_tags.length > 0 && (
+          <div className="ai-tags">
+            <span className="ai-label">🤖 AI:</span>
+            {video.ai_generated_tags.slice(0, 2).map(tag => (
+              <span key={tag} className="ai-tag">{tag}</span>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Composant Upload Vidéo
+function VideoUpload({ onSuccess }) {
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    category: 'Entertainment',
+    tags: '',
+    is_ad: false,
+    ad_type: '',
+    target_audience: ''
+  });
+  const [file, setFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [aiAnalyzing, setAiAnalyzing] = useState(false);
+
+  const categories = [
+    'Entertainment', 'Education', 'Technology', 'Business', 'Music', 
+    'Gaming', 'Sports', 'News', 'Lifestyle', 'Travel', 'Food', 'Fashion'
+  ];
+
+  const adTypes = [
+    'tv_commercial', 'social_media', 'corporate', 'product_demo', 
+    'brand_awareness', 'promotional'
+  ];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (newUserName.trim() && newUserName !== currentUser) {
-      // Envoyer un message de bienvenue pour initialiser la conversation
-      try {
-        await axios.post(`${API}/messages`, {
-          sender_name: currentUser,
-          receiver_name: newUserName.trim(),
-          content: `Salut ${newUserName}! 👋`
-        });
-        
-        onConversationStart(newUserName.trim());
-        setNewUserName("");
-      } catch (error) {
-        console.error("Erreur lors de la création de la conversation:", error);
-      }
+    if (!file) return;
+
+    setUploading(true);
+    setAiAnalyzing(true);
+
+    const uploadData = new FormData();
+    uploadData.append('file', file);
+    uploadData.append('title', formData.title);
+    uploadData.append('description', formData.description);
+    uploadData.append('category', formData.category);
+    uploadData.append('tags', formData.tags);
+    uploadData.append('is_ad', formData.is_ad);
+    uploadData.append('ad_type', formData.ad_type);
+    uploadData.append('target_audience', formData.target_audience);
+
+    try {
+      const response = await axios.post(`${API}/videos/upload`, uploadData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      setAiAnalyzing(false);
+      onSuccess(response.data);
+      
+      // Reset form
+      setFormData({
+        title: '',
+        description: '',
+        category: 'Entertainment',
+        tags: '',
+        is_ad: false,
+        ad_type: '',
+        target_audience: ''
+      });
+      setFile(null);
+      
+    } catch (error) {
+      console.error('Upload failed:', error);
+      alert('Upload failed: ' + (error.response?.data?.detail || 'Unknown error'));
+    } finally {
+      setUploading(false);
+      setAiAnalyzing(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="new-conversation-form">
-      <h4>Nouvelle conversation</h4>
-      <div className="input-group">
-        <input
-          type="text"
-          placeholder="Nom d'utilisateur"
-          value={newUserName}
-          onChange={(e) => setNewUserName(e.target.value)}
-          className="new-user-input"
-        />
+    <div className="upload-container">
+      <div className="upload-header">
+        <h2>📤 Télécharger une Vidéo</h2>
+        <p>Partagez vos créations publicitaires avec le monde</p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="upload-form">
+        <div className="file-upload">
+          <input
+            type="file"
+            accept="video/*"
+            onChange={(e) => setFile(e.target.files[0])}
+            required
+            className="file-input"
+          />
+          {file && (
+            <div className="file-preview">
+              <span>📹 {file.name}</span>
+              <span>{(file.size / 1024 / 1024).toFixed(2)} MB</span>
+            </div>
+          )}
+        </div>
+
+        <div className="form-row">
+          <div className="form-group">
+            <label>Titre *</label>
+            <input
+              type="text"
+              value={formData.title}
+              onChange={(e) => setFormData({...formData, title: e.target.value})}
+              required
+              placeholder="Titre accrocheur de votre vidéo..."
+            />
+          </div>
+        </div>
+
+        <div className="form-group">
+          <label>Description</label>
+          <textarea
+            value={formData.description}
+            onChange={(e) => setFormData({...formData, description: e.target.value})}
+            placeholder="Décrivez votre vidéo, son objectif, votre message..."
+            rows={4}
+          />
+        </div>
+
+        <div className="form-row">
+          <div className="form-group">
+            <label>Catégorie</label>
+            <select
+              value={formData.category}
+              onChange={(e) => setFormData({...formData, category: e.target.value})}
+            >
+              {categories.map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label>Tags (séparés par des virgules)</label>
+            <input
+              type="text"
+              value={formData.tags}
+              onChange={(e) => setFormData({...formData, tags: e.target.value})}
+              placeholder="marketing, publicité, créatif..."
+            />
+          </div>
+        </div>
+
+        <div className="ad-options">
+          <div className="checkbox-group">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={formData.is_ad}
+                onChange={(e) => setFormData({...formData, is_ad: e.target.checked})}
+              />
+              <span>🎯 Ceci est une publicité</span>
+            </label>
+          </div>
+
+          {formData.is_ad && (
+            <>
+              <div className="form-group">
+                <label>Type de publicité</label>
+                <select
+                  value={formData.ad_type}
+                  onChange={(e) => setFormData({...formData, ad_type: e.target.value})}
+                >
+                  <option value="">Sélectionner un type</option>
+                  {adTypes.map(type => (
+                    <option key={type} value={type}>
+                      {type.replace('_', ' ').toUpperCase()}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Public cible (séparé par des virgules)</label>
+                <input
+                  type="text"
+                  value={formData.target_audience}
+                  onChange={(e) => setFormData({...formData, target_audience: e.target.value})}
+                  placeholder="18-35 ans, gamers, professionnels..."
+                />
+              </div>
+            </>
+          )}
+        </div>
+
         <button 
           type="submit" 
-          className="start-chat-btn"
-          disabled={!newUserName.trim() || newUserName === currentUser}
+          disabled={uploading || !file}
+          className="upload-btn"
         >
-          💬
+          {uploading ? (
+            aiAnalyzing ? '🤖 Analyse IA en cours...' : '📤 Téléchargement...'
+          ) : (
+            '🚀 Publier la Vidéo'
+          )}
         </button>
-      </div>
-    </form>
+      </form>
+    </div>
   );
 }
 
+// Composant Page d'Accueil
+function HomePage() {
+  const [videos, setVideos] = useState([]);
+  const [recommendations, setRecommendations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedVideo, setSelectedVideo] = useState(null);
+  const [filter, setFilter] = useState('all');
+  const { isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    loadVideos();
+    if (isAuthenticated) {
+      loadRecommendations();
+    }
+  }, [filter, isAuthenticated]);
+
+  const loadVideos = async () => {
+    try {
+      const params = {};
+      if (filter === 'ads') params.is_ad = true;
+      if (filter === 'regular') params.is_ad = false;
+      
+      const response = await axios.get(`${API}/videos`, { params });
+      setVideos(response.data);
+    } catch (error) {
+      console.error('Failed to load videos:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadRecommendations = async () => {
+    try {
+      const response = await axios.get(`${API}/recommendations`);
+      setRecommendations(response.data);
+    } catch (error) {
+      console.error('Failed to load recommendations:', error);
+    }
+  };
+
+  const handleVideoClick = async (video) => {
+    setSelectedVideo(video);
+    
+    // Increment view count
+    try {
+      await axios.get(`${API}/videos/${video.id}`);
+    } catch (error) {
+      console.error('Failed to increment view:', error);
+    }
+  };
+
+  const handleLike = async (videoId) => {
+    if (!isAuthenticated) return;
+    
+    try {
+      await axios.post(`${API}/videos/${videoId}/like`);
+      // Refresh video data
+      loadVideos();
+    } catch (error) {
+      console.error('Failed to like video:', error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="loading-screen">
+        <div className="loading-spinner"></div>
+        <p>Chargement des vidéos...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="home-page">
+      {/* Hero Section */}
+      <section className="hero-section">
+        <div className="hero-content">
+          <h1>🎬 TuneMe (TM)</h1>
+          <p>La Plateforme Révolutionnaire pour vos Vidéos Publicitaires</p>
+          <div className="hero-stats">
+            <div className="stat">
+              <span className="stat-number">{videos.length}</span>
+              <span className="stat-label">Vidéos</span>
+            </div>
+            <div className="stat">
+              <span className="stat-number">{videos.filter(v => v.is_ad).length}</span>
+              <span className="stat-label">Publicités</span>
+            </div>
+            <div className="stat">
+              <span className="stat-number">🤖 IA</span>
+              <span className="stat-label">Alimenté</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Filtres */}
+      <div className="filter-bar">
+        <button 
+          className={filter === 'all' ? 'active' : ''}
+          onClick={() => setFilter('all')}
+        >
+          🎯 Toutes les vidéos
+        </button>
+        <button 
+          className={filter === 'ads' ? 'active' : ''}
+          onClick={() => setFilter('ads')}
+        >
+          📺 Publicités seulement
+        </button>
+        <button 
+          className={filter === 'regular' ? 'active' : ''}
+          onClick={() => setFilter('regular')}
+        >
+          🎬 Contenu régulier
+        </button>
+      </div>
+
+      {/* Recommandations IA */}
+      {isAuthenticated && recommendations.length > 0 && (
+        <section className="recommendations-section">
+          <h2>🤖 Recommandations IA pour vous</h2>
+          <div className="videos-grid">
+            {recommendations.slice(0, 4).map(video => (
+              <VideoCard 
+                key={video.id} 
+                video={video} 
+                onClick={handleVideoClick}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Grille de Vidéos */}
+      <section className="videos-section">
+        <h2>
+          {filter === 'all' ? '🌟 Toutes les Vidéos' : 
+           filter === 'ads' ? '📺 Publicités Tendance' : 
+           '🎬 Contenu Créatif'}
+        </h2>
+        
+        {videos.length === 0 ? (
+          <div className="no-videos">
+            <h3>Aucune vidéo trouvée</h3>
+            <p>Soyez le premier à partager votre création!</p>
+          </div>
+        ) : (
+          <div className="videos-grid">
+            {videos.map(video => (
+              <VideoCard 
+                key={video.id} 
+                video={video} 
+                onClick={handleVideoClick}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Modal Vidéo */}
+      {selectedVideo && (
+        <div className="video-modal" onClick={() => setSelectedVideo(null)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <button 
+              className="close-btn"
+              onClick={() => setSelectedVideo(null)}
+            >
+              ✕
+            </button>
+            
+            <VideoPlayer 
+              video={selectedVideo}
+              onEnded={() => console.log('Video ended')}
+            />
+            
+            <div className="video-details">
+              <h2>{selectedVideo.title}</h2>
+              <div className="video-actions">
+                <button 
+                  className="like-btn"
+                  onClick={() => handleLike(selectedVideo.id)}
+                >
+                  👍 {selectedVideo.likes_count}
+                </button>
+                <button className="share-btn">📤 Partager</button>
+                {selectedVideo.is_ad && (
+                  <span className="ad-revenue">
+                    💰 ${selectedVideo.revenue_generated.toFixed(2)} généré
+                  </span>
+                )}
+              </div>
+              
+              <div className="creator-info">
+                <span>Créé par @{selectedVideo.creator_username}</span>
+                <span>{selectedVideo.views_count} vues</span>
+              </div>
+              
+              <p className="description">{selectedVideo.description}</p>
+              
+              {selectedVideo.ai_analysis && (
+                <div className="ai-insights">
+                  <h4>🤖 Insights IA</h4>
+                  <div className="insight-grid">
+                    <div className="insight">
+                      <span className="label">Engagement prédit:</span>
+                      <span className="value">{selectedVideo.ai_analysis.engagement_prediction}/10</span>
+                    </div>
+                    <div className="insight">
+                      <span className="label">Qualité contenu:</span>
+                      <span className="value">{selectedVideo.ai_analysis.content_quality}</span>
+                    </div>
+                    <div className="insight">
+                      <span className="label">Potentiel monétisation:</span>
+                      <span className="value">{selectedVideo.ai_analysis.monetization_potential}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Composant Dashboard Créateur
+function CreatorDashboard() {
+  const { user } = useAuth();
+  const [analytics, setAnalytics] = useState(null);
+  const [showUpload, setShowUpload] = useState(false);
+  const [userVideos, setUserVideos] = useState([]);
+
+  useEffect(() => {
+    if (user) {
+      loadAnalytics();
+      loadUserVideos();
+    }
+  }, [user]);
+
+  const loadAnalytics = async () => {
+    try {
+      const response = await axios.get(`${API}/analytics/channel/${user.id}`);
+      setAnalytics(response.data);
+    } catch (error) {
+      console.error('Failed to load analytics:', error);
+    }
+  };
+
+  const loadUserVideos = async () => {
+    try {
+      const response = await axios.get(`${API}/videos`);
+      const filteredVideos = response.data.filter(v => v.creator_username === user.username);
+      setUserVideos(filteredVideos);
+    } catch (error) {
+      console.error('Failed to load user videos:', error);
+    }
+  };
+
+  const handleUploadSuccess = (newVideo) => {
+    setUserVideos([newVideo, ...userVideos]);
+    setShowUpload(false);
+    loadAnalytics();
+    alert('Vidéo téléchargée avec succès! 🎉');
+  };
+
+  if (!analytics) {
+    return <div className="loading-screen">Chargement du dashboard...</div>;
+  }
+
+  return (
+    <div className="creator-dashboard">
+      <header className="dashboard-header">
+        <h1>📊 Dashboard Créateur</h1>
+        <p>Bienvenue, {user.display_name}!</p>
+        <button 
+          className="upload-toggle-btn"
+          onClick={() => setShowUpload(!showUpload)}
+        >
+          {showUpload ? '📊 Voir Analytics' : '📤 Télécharger Vidéo'}
+        </button>
+      </header>
+
+      {showUpload ? (
+        <VideoUpload onSuccess={handleUploadSuccess} />
+      ) : (
+        <>
+          {/* Analytics Cards */}
+          <div className="analytics-grid">
+            <div className="analytics-card">
+              <div className="card-icon">📹</div>
+              <div className="card-content">
+                <h3>{analytics.total_videos}</h3>
+                <p>Vidéos Publiées</p>
+              </div>
+            </div>
+            
+            <div className="analytics-card">
+              <div className="card-icon">👀</div>
+              <div className="card-content">
+                <h3>{analytics.total_views.toLocaleString()}</h3>
+                <p>Vues Totales</p>
+              </div>
+            </div>
+            
+            <div className="analytics-card">
+              <div className="card-icon">👥</div>
+              <div className="card-content">
+                <h3>{analytics.total_subscribers}</h3>
+                <p>Abonnés</p>
+              </div>
+            </div>
+            
+            <div className="analytics-card">
+              <div className="card-icon">💰</div>
+              <div className="card-content">
+                <h3>${analytics.total_revenue.toFixed(2)}</h3>
+                <p>Revenus Générés</p>
+              </div>
+            </div>
+            
+            <div className="analytics-card">
+              <div className="card-icon">📈</div>
+              <div className="card-content">
+                <h3>{analytics.avg_engagement_rate}%</h3>
+                <p>Taux d'Engagement</p>
+              </div>
+            </div>
+            
+            <div className="analytics-card">
+              <div className="card-icon">🤖</div>
+              <div className="card-content">
+                <h3>IA</h3>
+                <p>Insights Activés</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Vidéos de l'utilisateur */}
+          <section className="user-videos">
+            <h2>📹 Vos Vidéos ({userVideos.length})</h2>
+            {userVideos.length === 0 ? (
+              <div className="no-content">
+                <h3>Aucune vidéo publiée</h3>
+                <p>Commencez à créer du contenu incroyable!</p>
+                <button 
+                  className="cta-btn"
+                  onClick={() => setShowUpload(true)}
+                >
+                  📤 Télécharger votre première vidéo
+                </button>
+              </div>
+            ) : (
+              <div className="videos-grid">
+                {userVideos.map(video => (
+                  <VideoCard key={video.id} video={video} onClick={() => {}} />
+                ))}
+              </div>
+            )}
+          </section>
+        </>
+      )}
+    </div>
+  );
+}
+
+// Composant Login/Register
+function AuthPage() {
+  const [isLogin, setIsLogin] = useState(true);
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    username: '',
+    display_name: '',
+    bio: ''
+  });
+  const { login, register, loading } = useAuth();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    const result = isLogin 
+      ? await login(formData.email, formData.password)
+      : await register(formData);
+    
+    if (!result.success) {
+      alert(result.error);
+    }
+  };
+
+  return (
+    <div className="auth-page">
+      <div className="auth-container">
+        <div className="auth-header">
+          <h1>🎬 TuneMe (TM)</h1>
+          <p>Rejoignez la révolution vidéo publicitaire</p>
+        </div>
+
+        <div className="auth-tabs">
+          <button 
+            className={isLogin ? 'active' : ''}
+            onClick={() => setIsLogin(true)}
+          >
+            Connexion
+          </button>
+          <button 
+            className={!isLogin ? 'active' : ''}
+            onClick={() => setIsLogin(false)}
+          >
+            Inscription
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="auth-form">
+          {!isLogin && (
+            <>
+              <div className="form-group">
+                <label>Nom d'utilisateur</label>
+                <input
+                  type="text"
+                  value={formData.username}
+                  onChange={(e) => setFormData({...formData, username: e.target.value})}
+                  required
+                  placeholder="votre_nom_utilisateur"
+                />
+              </div>
+              
+              <div className="form-group">
+                <label>Nom d'affichage</label>
+                <input
+                  type="text"
+                  value={formData.display_name}
+                  onChange={(e) => setFormData({...formData, display_name: e.target.value})}
+                  required
+                  placeholder="Votre Nom Public"
+                />
+              </div>
+            </>
+          )}
+
+          <div className="form-group">
+            <label>Email</label>
+            <input
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({...formData, email: e.target.value})}
+              required
+              placeholder="votre@email.com"
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Mot de passe</label>
+            <input
+              type="password"
+              value={formData.password}
+              onChange={(e) => setFormData({...formData, password: e.target.value})}
+              required
+              placeholder="••••••••"
+            />
+          </div>
+
+          {!isLogin && (
+            <div className="form-group">
+              <label>Bio (optionnel)</label>
+              <textarea
+                value={formData.bio}
+                onChange={(e) => setFormData({...formData, bio: e.target.value})}
+                placeholder="Parlez-nous de vous..."
+                rows={3}
+              />
+            </div>
+          )}
+
+          <button type="submit" disabled={loading} className="auth-btn">
+            {loading ? '⏳ Traitement...' : (isLogin ? '🚀 Se Connecter' : '🎉 Créer un Compte')}
+          </button>
+        </form>
+
+        <div className="auth-features">
+          <h3>✨ Fonctionnalités TuneMe</h3>
+          <ul>
+            <li>🤖 Analyse IA de vos vidéos</li>
+            <li>📊 Analytics avancées en temps réel</li>
+            <li>💰 Monétisation intelligente</li>
+            <li>🎯 Ciblage publicitaire précis</li>
+            <li>📱 Interface ultra-moderne</li>
+            <li>🚀 Recommandations personnalisées</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Composant Navigation
+function Navigation() {
+  const { user, logout, isAuthenticated } = useAuth();
+  const [currentPage, setCurrentPage] = useState('home');
+
+  return (
+    <nav className="navigation">
+      <div className="nav-content">
+        <button 
+          className={currentPage === 'home' ? 'active' : ''}
+          onClick={() => setCurrentPage('home')}
+        >
+          🏠 Accueil
+        </button>
+        
+        {isAuthenticated && (
+          <button 
+            className={currentPage === 'dashboard' ? 'active' : ''}
+            onClick={() => setCurrentPage('dashboard')}
+          >
+            📊 Dashboard
+          </button>
+        )}
+        
+        <div className="nav-user">
+          {isAuthenticated ? (
+            <>
+              <span className="user-greeting">Salut, {user?.display_name}! 👋</span>
+              <button onClick={logout} className="logout-btn">
+                🚪 Déconnexion
+              </button>
+            </>
+          ) : (
+            <span className="login-prompt">Connectez-vous pour accéder aux fonctionnalités avancées</span>
+          )}
+        </div>
+      </div>
+      
+      {/* Page Content */}
+      <div className="page-content">
+        {currentPage === 'home' && <HomePage />}
+        {currentPage === 'dashboard' && isAuthenticated && <CreatorDashboard />}
+      </div>
+    </nav>
+  );
+}
+
+// Application principale
 function App() {
   return (
-    <div className="App">
-      <ChatMe />
-    </div>
+    <AuthProvider>
+      <div className="App">
+        <BrowserRouter>
+          <AppContent />
+        </BrowserRouter>
+      </div>
+    </AuthProvider>
+  );
+}
+
+function AppContent() {
+  const { isAuthenticated } = useAuth();
+  
+  return (
+    <Routes>
+      <Route 
+        path="/" 
+        element={isAuthenticated ? <Navigation /> : <AuthPage />} 
+      />
+      <Route path="*" element={<Navigate to="/" />} />
+    </Routes>
   );
 }
 

@@ -340,7 +340,7 @@ const AdvancedAudioPlayer = ({ track, onNext, onPrevious, playlist = [] }) => {
         {showEqualizer && (
           <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-4 bg-slate-800/95 backdrop-blur-lg rounded-2xl p-6 border border-white/10 shadow-2xl">
             <h4 className="text-white font-bold mb-4 flex items-center">
-              <Equalizer className="w-5 h-5 mr-2" />
+              <Sliders className="w-5 h-5 mr-2" />
               Égaliseur 3D
             </h4>
             <div className="flex items-end space-x-2">

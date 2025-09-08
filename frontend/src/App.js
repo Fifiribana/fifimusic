@@ -227,6 +227,9 @@ const useAudio = () => {
   return context;
 };
 
+// Export useAudio hook for use in other components
+export { useAudio };
+
 // Cart Context
 const CartContext = createContext();
 

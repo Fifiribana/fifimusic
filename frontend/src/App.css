@@ -663,6 +663,99 @@ body {
   max-height: 60vh;
 }
 
+.video-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+  color: white;
+  padding: 4rem 2rem;
+  min-height: 300px;
+}
+
+.video-loading .loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top: 3px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+.video-error {
+  background: var(--dark-bg);
+  color: white;
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.error-content {
+  text-align: center;
+  padding: 2rem;
+}
+
+.error-content h3 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: white;
+}
+
+.error-content p {
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 2rem;
+}
+
+.video-placeholder {
+  position: relative;
+  max-width: 500px;
+  margin: 0 auto;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.placeholder-thumbnail {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16/9;
+  object-fit: cover;
+}
+
+.placeholder-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.placeholder-overlay:hover {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.play-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  animation: pulse 2s infinite;
+}
+
+.placeholder-overlay p {
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
 .video-controls {
   position: absolute;
   bottom: 0;
@@ -688,9 +781,15 @@ body {
   transition: var(--transition);
 }
 
-.play-btn:hover,
-.fullscreen-btn:hover {
+.play-btn:hover:not(:disabled),
+.fullscreen-btn:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.2);
+}
+
+.play-btn:disabled,
+.fullscreen-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .progress-bar,
@@ -700,6 +799,12 @@ body {
   border-radius: 2px;
   background: rgba(255, 255, 255, 0.3);
   cursor: pointer;
+}
+
+.progress-bar:disabled,
+.volume-slider:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .volume-slider {

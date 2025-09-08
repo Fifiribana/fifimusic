@@ -418,6 +418,98 @@ async def get_current_user_profile(current_user: User = Depends(get_current_user
     """Get current user profile"""
     return UserProfile(**current_user.dict())
 
+@api_router.put("/users/me/profile", response_model=UserProfile)
+async def update_user_profile(
+    display_name: Optional[str] = None,
+    bio: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Update user profile information"""
+    update_data = {}
+    if display_name:
+        update_data["display_name"] = display_name
+    if bio is not None:
+        update_data["bio"] = bio
+    
+    if update_data:
+        await db.users.update_one(
+            {"id": current_user.id},
+            {"$set": update_data}
+        )
+        
+        # Get updated user
+        updated_user = await db.users.find_one({"id": current_user.id})
+        return UserProfile(**updated_user)
+    
+    return UserProfile(**current_user.dict())
+
+@api_router.post("/users/me/avatar")
+async def upload_avatar(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Upload user avatar/profile picture"""
+    
+    # Validate file type
+    if not file.content_type.startswith('image/'):
+        raise HTTPException(status_code=400, detail="File must be an image")
+    
+    # Validate file size (max 5MB)
+    file_size = len(await file.read())
+    await file.seek(0)  # Reset file pointer
+    
+    if file_size > 5 * 1024 * 1024:  # 5MB
+        raise HTTPException(status_code=400, detail="File size must be less than 5MB")
+    
+    # Generate unique filename
+    avatar_id = str(uuid.uuid4())
+    file_extension = file.filename.split('.')[-1] if '.' in file.filename else 'jpg'
+    
+    # In a real app, you would upload to cloud storage (AWS S3, Cloudinary, etc.)
+    # For demo purposes, we'll use placeholder avatar URLs
+    avatar_url = f"https://api.dicebear.com/7.x/avataaars/svg?seed={current_user.username}&backgroundColor=667eea"
+    
+    # Alternative: Generate a professional avatar URL based on user data
+    professional_avatars = [
+        f"https://api.dicebear.com/7.x/avataaars/svg?seed={current_user.username}&backgroundColor=667eea&clothingColor=3c4fe0",
+        f"https://api.dicebear.com/7.x/personas/svg?seed={current_user.username}&backgroundColor=764ba2",
+        f"https://api.dicebear.com/7.x/big-smile/svg?seed={current_user.username}&backgroundColor=f093fb",
+        f"https://api.dicebear.com/7.x/fun-emoji/svg?seed={current_user.username}&backgroundColor=4facfe",
+    ]
+    
+    import random
+    avatar_url = random.choice(professional_avatars)
+    
+    # Update user avatar in database
+    await db.users.update_one(
+        {"id": current_user.id},
+        {"$set": {"avatar_url": avatar_url}}
+    )
+    
+    return {
+        "message": "Avatar uploaded successfully",
+        "avatar_url": avatar_url,
+        "file_size": file_size,
+        "file_type": file.content_type
+    }
+
+@api_router.delete("/users/me/avatar")
+async def remove_avatar(current_user: User = Depends(get_current_user)):
+    """Remove user avatar (set to default)"""
+    
+    # Set to default avatar
+    default_avatar = f"https://api.dicebear.com/7.x/initials/svg?seed={current_user.display_name}&backgroundColor=e2e8f0"
+    
+    await db.users.update_one(
+        {"id": current_user.id},
+        {"$set": {"avatar_url": default_avatar}}
+    )
+    
+    return {
+        "message": "Avatar removed successfully",
+        "avatar_url": default_avatar
+    }
+
 @api_router.get("/users/{username}", response_model=UserProfile)
 async def get_user_profile(username: str):
     """Get user profile by username"""
@@ -457,6 +549,40 @@ async def subscribe_to_channel(user_id: str, current_user: User = Depends(get_cu
     )
     
     return {"message": "Subscribed successfully"}
+
+@api_router.delete("/users/{user_id}/subscribe")
+async def unsubscribe_from_channel(user_id: str, current_user: User = Depends(get_current_user)):
+    """Unsubscribe from a channel"""
+    
+    # Remove subscription
+    result = await db.subscriptions.delete_one({
+        "subscriber_id": current_user.id,
+        "channel_id": user_id
+    })
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Subscription not found")
+    
+    # Update subscriber count
+    await db.users.update_one(
+        {"id": user_id},
+        {"$inc": {"subscribers_count": -1}}
+    )
+    
+    return {"message": "Unsubscribed successfully"}
+
+@api_router.get("/users/me/subscriptions", response_model=List[UserProfile])
+async def get_user_subscriptions(current_user: User = Depends(get_current_user)):
+    """Get user's subscriptions"""
+    
+    subscriptions = await db.subscriptions.find({"subscriber_id": current_user.id}).to_list(100)
+    channel_ids = [sub["channel_id"] for sub in subscriptions]
+    
+    if not channel_ids:
+        return []
+    
+    channels = await db.users.find({"id": {"$in": channel_ids}}).to_list(100)
+    return [UserProfile(**channel) for channel in channels]
 
 # ==================== VIDEO ROUTES ====================
 

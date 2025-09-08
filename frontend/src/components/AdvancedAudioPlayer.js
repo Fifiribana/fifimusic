@@ -12,7 +12,7 @@ import {
   Download,
   Share2,
   Music,
-  Equalizer,
+  Sliders,
   Headphones,
   Radio,
   Mic2

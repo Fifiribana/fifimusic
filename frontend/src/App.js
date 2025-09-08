@@ -20,6 +20,13 @@ import FifiRibanaYouTube from "./pages/FifiRibanaYouTube";
 import DonationPage from "./pages/DonationPage";
 import DonationSuccessPage from "./pages/DonationSuccessPage";
 
+// Nouveaux composants 3D
+import Enhanced3DHero from "./components/Enhanced3DHero";
+import AdvancedAudioPlayer from "./components/AdvancedAudioPlayer";
+import Enhanced3DNavigation from "./components/Enhanced3DNavigation";
+import AIStudio3D from "./components/AIStudio3D";
+import "./components/Enhanced3DStyles.css";
+
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 

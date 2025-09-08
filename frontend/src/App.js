@@ -673,7 +673,7 @@ function HomePage() {
                 <button className="share-btn">📤 Partager</button>
                 {selectedVideo.is_ad && (
                   <span className="ad-revenue">
-                    💰 ${selectedVideo.revenue_generated.toFixed(2)} généré
+                    💰 ${(selectedVideo.revenue_generated || 0).toFixed(2)} généré
                   </span>
                 )}
               </div>

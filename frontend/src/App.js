@@ -18,6 +18,7 @@ import SolidarityPage from "./pages/SolidarityPage";
 import SearchPage from "./pages/SearchPage";
 import FifiRibanaYouTube from "./pages/FifiRibanaYouTube";
 import DonationPage from "./pages/DonationPage";
+import DonationSuccessPage from "./pages/DonationSuccessPage";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;

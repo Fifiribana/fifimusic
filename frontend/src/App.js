@@ -4,7 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import axios from "axios";
 import { Search, Globe, Music, Users, ShoppingCart, User, Menu, X, Play, Pause, Volume2, Heart, Download, CreditCard, LogIn, UserPlus, LogOut, Star, Headphones, MapPin, Settings, ShoppingBag, Bot } from "lucide-react";
 import { ToastProvider, useToast } from "./components/Toast";
-import { useGlobalTranslation } from "./components/LanguageTranslator";
+import { GlobalTranslationProvider, GlobalLanguageSelector } from "./components/LanguageTranslator";
 import FreeContentSection from "./components/FreeContentSection";
 import LanguageSelector from "./components/LanguageSelector";
 import AIChat from "./components/AIChat";

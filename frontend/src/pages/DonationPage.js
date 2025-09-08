@@ -361,7 +361,7 @@ const DonationPage = () => {
                         : 'border-gray-200 hover:border-terracotta/50'
                     }`}
                   >
-                    <PayPal className="w-6 h-6 mr-3" />
+                    <DollarSign className="w-6 h-6 mr-3" />
                     <div>
                       <div className="font-semibold">PayPal</div>
                       <div className="text-sm text-gray-600">Paiement rapide</div>

@@ -506,11 +506,8 @@ const Navigation = () => {
 
             {/* Right side icons */}
             <div className="flex items-center space-x-3">
-              {/* Temporarily disable Language Selector */}
-              {/* <LanguageSelector 
-                currentLanguage={currentLanguage}
-                onLanguageChange={handleLanguageChange}
-              /> */}
+              {/* Global Language Selector */}
+              <GlobalLanguageSelector />
               
               {/* Search Bar */}
               <div className="relative">
@@ -529,6 +526,15 @@ const Navigation = () => {
                   }}
                 />
               </div>
+
+              {/* Donation Button */}
+              <a
+                href="/donation"
+                className="hidden md:flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-terracotta to-gold hover:from-gold hover:to-terracotta text-white font-semibold rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg border-2 border-white/20"
+              >
+                <Heart className="w-4 h-4" />
+                <span>Soutenir</span>
+              </a>
               
               <div className="relative">
                 <button className="p-2 text-white hover:text-terracotta transition-colors">

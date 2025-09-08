@@ -633,6 +633,13 @@ def prepare_from_mongo(item):
                 item[key] = [prepare_from_mongo(v) if isinstance(v, dict) else v for v in value]
     return item
 
+def serialize_track(track):
+    """Serialize track data for API response"""
+    if isinstance(track, dict):
+        return prepare_from_mongo(track)
+    else:
+        return track.dict() if hasattr(track, 'dict') else track
+
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 

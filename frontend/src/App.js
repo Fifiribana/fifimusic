@@ -9,6 +9,18 @@ const API = `${BACKEND_URL}/api`;
 // Configuration Axios
 axios.defaults.headers.common['Content-Type'] = 'application/json';
 
+// Context pour l'authentification
+const AuthContext = React.createContext();
+
+// Hook pour l'authentification
+const useAuth = () => {
+  const context = React.useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
+
 // Composant de Gestion Photo de Profil
 function ProfilePictureManager({ user, onUpdate }) {
   const [isEditing, setIsEditing] = useState(false);

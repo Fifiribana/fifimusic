@@ -283,7 +283,7 @@ class TranslationService:
             return {'cache_enabled': False, 'cached_translations': 0}
         
         try:
-            keys = await self.redis_client.keys("translation:*")
+            keys = self.redis_client.keys("translation:*")
             return {
                 'cache_enabled': True,
                 'cached_translations': len(keys),

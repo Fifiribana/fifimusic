@@ -1460,6 +1460,8 @@ const SolidarityPageWrapper = () => {
 
 // Main Home Component
 const Home = () => {
+  const { t, translations } = useTranslation();
+  
   const helloWorldApi = async () => {
     try {
       const response = await axios.get(`${API}/`);
@@ -1478,6 +1480,7 @@ const Home = () => {
     <div className="min-h-screen">
       <Navigation />
       <HeroSection />
+      <FreeContentSection translations={translations} />
       <InteractiveMap />
       <FeaturedCollections />
       <FeaturedArtistSection />
